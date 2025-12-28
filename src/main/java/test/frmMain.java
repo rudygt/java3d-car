@@ -1,6 +1,5 @@
 package test;
 
-
 import org.scijava.java3d.utils.behaviors.vp.OrbitBehavior;
 import org.scijava.java3d.utils.geometry.Box;
 import org.scijava.java3d.utils.geometry.Sphere;
@@ -52,7 +51,6 @@ import org.scijava.vecmath.Point3f;
 import org.scijava.vecmath.Vector3d;
 import org.scijava.vecmath.Vector3f;
 
-
 public class frmMain extends JFrame {
 
     private BranchGroup mEscena = null;
@@ -84,8 +82,8 @@ public class frmMain extends JFrame {
 
         setUndecorated(false);
         Dimension screenSize = Toolkit.getDefaultToolkit().getScreenSize();
-        setBounds(0, 0, (int)screenSize.getWidth(), (int)screenSize.getHeight());
-        this.getContentPane().setLayout(new BorderLayout());        
+        setBounds(0, 0, (int) screenSize.getWidth(), (int) screenSize.getHeight());
+        this.getContentPane().setLayout(new BorderLayout());
         this.setTitle("Java3D");
         this.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         this.setBackground(Color.black);
@@ -121,8 +119,7 @@ public class frmMain extends JFrame {
 
     private void agregarPanel3D() {
 
-        Canvas3D panel =
-            new Canvas3D(SimpleUniverse.getPreferredConfiguration());
+        Canvas3D panel = new Canvas3D(SimpleUniverse.getPreferredConfiguration());
 
         canvas = panel;
 
@@ -134,19 +131,17 @@ public class frmMain extends JFrame {
 
         mUniverso = universo;
 
-
         BranchGroup escena = new BranchGroup();
 
         mEscena = escena;
 
         universo.getViewingPlatform().setNominalViewingTransform();
 
-
         OrbitBehavior orbit = new OrbitBehavior(panel);
 
         orbit.setSchedulingBounds(new BoundingSphere(new Point3d(0.0, 0.0,
-                                                                 0.0),
-                                                     Double.POSITIVE_INFINITY));
+                0.0),
+                Double.POSITIVE_INFINITY));
 
         universo.getViewingPlatform().setViewPlatformBehavior(orbit);
 
@@ -162,73 +157,78 @@ public class frmMain extends JFrame {
 
         Background bg = new Background();
         bg.setApplicationBounds(new BoundingSphere(new Point3d(0.0, 0.0, 0.0),
-                                                   55));
+                55));
         BranchGroup backGeoBranch = new BranchGroup();
 
+        /*
+         * PhysicalBody myBody = new PhysicalBody();
+         * PhysicalEnvironment myEnvironment = new PhysicalEnvironment();
+         * JavaSoundMixer myMixer = new JavaSoundMixer(myEnvironment);
+         * myMixer.initialize();
+         * mUniverso.getViewer().getView().setPhysicalBody(myBody);
+         * mUniverso.getViewer().getView().setPhysicalEnvironment(myEnvironment);
+         * 
+         * mEscena.addChild(this.addObjectSound("c:\\3d\\audio\\loop.aif",
+         * 105));
+         */
+        /*
+         * Sphere sphereObj =
+         * new Sphere(1.0f, Sphere.GENERATE_NORMALS | Sphere.GENERATE_NORMALS_INWARD |
+         * Sphere.GENERATE_TEXTURE_COORDS |
+         * Sphere.GENERATE_TEXTURE_COORDS_Y_UP, 45 , appL );
+         * 
+         * Box bgBox = new Box( 0.5f, Box.GENERATE_NORMALS | Box.GENERATE_NORMALS_INWARD
+         * |
+         * Box.GENERATE_TEXTURE_COORDS |
+         * Box.GENERATE_TEXTURE_COORDS_Y_UP, 45 , appL );
+         */
 
-        /*PhysicalBody myBody = new PhysicalBody();
-        PhysicalEnvironment myEnvironment = new PhysicalEnvironment();
-        JavaSoundMixer myMixer = new JavaSoundMixer(myEnvironment);
-        myMixer.initialize();
-        mUniverso.getViewer().getView().setPhysicalBody(myBody);
-        mUniverso.getViewer().getView().setPhysicalEnvironment(myEnvironment);
+        // Appearance backgroundApp = sphereObj.getAppearance();
+        // backGeoBranch.addChild(sphereObj);
+        /*
+         * backGeoBranch.addChild(bgBox);
+         * bg.setGeometry(backGeoBranch);
+         */
 
-        mEscena.addChild(this.addObjectSound("c:\\3d\\audio\\loop.aif",
-                                             105));*/
-        /*Sphere sphereObj =
-            new Sphere(1.0f, Sphere.GENERATE_NORMALS | Sphere.GENERATE_NORMALS_INWARD |
-                       Sphere.GENERATE_TEXTURE_COORDS |
-                       Sphere.GENERATE_TEXTURE_COORDS_Y_UP, 45 , appL );
-
-        Box bgBox = new Box( 0.5f, Box.GENERATE_NORMALS | Box.GENERATE_NORMALS_INWARD |
-                       Box.GENERATE_TEXTURE_COORDS |
-                       Box.GENERATE_TEXTURE_COORDS_Y_UP, 45 , appL );*/
-
-        //      Appearance backgroundApp = sphereObj.getAppearance();
-        //backGeoBranch.addChild(sphereObj);
-        /*backGeoBranch.addChild(bgBox);
-        bg.setGeometry(backGeoBranch);*/
-
-
-        /*backGeoBranch.addChild(b);
-        bg.setGeometry(backGeoBranch);*/
+        /*
+         * backGeoBranch.addChild(b);
+         * bg.setGeometry(backGeoBranch);
+         */
         mEscena.addChild(MapBuilder.getSkyBox());
 
+        // backgroundApp.setTexture(appL.getTexture());
 
-        //        backgroundApp.setTexture(appL.getTexture());
-
-        //normalSetup(panel);
+        // normalSetup(panel);
 
         /* version 2 */
 
-
         /* fin version 2 */
 
-
-        //mEscena.addChild(MapBuilder.test());
-        //  mEscena.addChild( Tools.rotarZ( Math.PI / 12.0 , MapBuilder.getSegmentoRecto( 20 )  )  );
+        // mEscena.addChild(MapBuilder.test());
+        // mEscena.addChild( Tools.rotarZ( Math.PI / 12.0 , MapBuilder.getSegmentoRecto(
+        // 20 ) ) );
 
         dosetup(panel);
 
-        /*TransformGroup dball = new TransformGroup();
-        dball.setCapability( TransformGroup.ALLOW_TRANSFORM_WRITE );
-        dball.addChild( new Sphere(0.1f) );
-        dball.setPickable( false );
-        //car.setDebugBall( dball );
-
-        dball.setCollidable( true );
-
-        mEscena.addChild( dball );*/
+        /*
+         * TransformGroup dball = new TransformGroup();
+         * dball.setCapability( TransformGroup.ALLOW_TRANSFORM_WRITE );
+         * dball.addChild( new Sphere(0.1f) );
+         * dball.setPickable( false );
+         * //car.setDebugBall( dball );
+         * 
+         * dball.setCollidable( true );
+         * 
+         * mEscena.addChild( dball );
+         */
 
         Node piso = MapBuilder.getGroundPlane();
 
         mEscena.addChild(Tools.trasladar(0, -9.2f, 0, piso));
 
-
         Color3f lightColor = new Color3f(1.0f, 1.0f, 1.0f);
 
-        BoundingSphere bounds =
-            new BoundingSphere(new Point3d(0, 0, 0), 1000.0);
+        BoundingSphere bounds = new BoundingSphere(new Point3d(0, 0, 0), 1000.0);
 
         AmbientLight ambientLightNode = new AmbientLight(lightColor);
         ambientLightNode.setInfluencingBounds(bounds);
@@ -236,8 +236,7 @@ public class frmMain extends JFrame {
 
         Vector3f light1Direction = new Vector3f(1.0f, 1.0f, -5f);
 
-        DirectionalLight light1 =
-            new DirectionalLight(lightColor, light1Direction);
+        DirectionalLight light1 = new DirectionalLight(lightColor, light1Direction);
         light1.setInfluencingBounds(bounds);
 
         mEscena.addChild(light1);
@@ -246,64 +245,64 @@ public class frmMain extends JFrame {
 
         mUniverso.addBranchGraph(mEscena);
 
-        //testPick();
+        // testPick();
 
         /*
-        try {
-
-            Scene x = frmMain.loadScene("c:\\3d\\850nR.obj");
-
-            Scene y = frmMain.loadScene("c:\\3d\\rueda4.obj");
-
-            Color3f lightColor = new Color3f(1.0f, 1.0f, 1.0f);
-
-            BranchGroup bg = x.getSceneGroup();
-
-            BranchGroup rg = y.getSceneGroup();
-
-            Transform3D escalar = new Transform3D();
-
-            TransformGroup g = new TransformGroup();
-
-            g.setCapability( TransformGroup.ALLOW_TRANSFORM_WRITE );
-
-            mGrupo = g;
-            //escalar.setScale(0.001);
-
-            g.setTransform( escalar );
-
-            g.addChild( rg );
-
-
-            mEscena = new BranchGroup() ;
-
-            mEscena.addChild( bg );
-            mEscena.addChild( g );
-
-            BoundingSphere bounds =
-                new BoundingSphere(new Point3d(0, 0, 0), 100.0);
-
-            AmbientLight ambientLightNode = new AmbientLight(lightColor);
-            ambientLightNode.setInfluencingBounds(bounds);
-            mEscena.addChild(ambientLightNode);
-
-            Vector3f light1Direction = new Vector3f(1.0f, 1.0f, -5f);
-
-            DirectionalLight light1 =
-                new DirectionalLight(lightColor, light1Direction);
-            light1.setInfluencingBounds(bounds);
-
-            mEscena.addChild(light1);
-
-
-            mUniverso.addBranchGraph(mEscena);
-
-        } catch (Exception ex) {
-            ex.printStackTrace();
-        } finally {
-        }
-
-*/
+         * try {
+         * 
+         * Scene x = frmMain.loadScene("c:\\3d\\850nR.obj");
+         * 
+         * Scene y = frmMain.loadScene("c:\\3d\\rueda4.obj");
+         * 
+         * Color3f lightColor = new Color3f(1.0f, 1.0f, 1.0f);
+         * 
+         * BranchGroup bg = x.getSceneGroup();
+         * 
+         * BranchGroup rg = y.getSceneGroup();
+         * 
+         * Transform3D escalar = new Transform3D();
+         * 
+         * TransformGroup g = new TransformGroup();
+         * 
+         * g.setCapability( TransformGroup.ALLOW_TRANSFORM_WRITE );
+         * 
+         * mGrupo = g;
+         * //escalar.setScale(0.001);
+         * 
+         * g.setTransform( escalar );
+         * 
+         * g.addChild( rg );
+         * 
+         * 
+         * mEscena = new BranchGroup() ;
+         * 
+         * mEscena.addChild( bg );
+         * mEscena.addChild( g );
+         * 
+         * BoundingSphere bounds =
+         * new BoundingSphere(new Point3d(0, 0, 0), 100.0);
+         * 
+         * AmbientLight ambientLightNode = new AmbientLight(lightColor);
+         * ambientLightNode.setInfluencingBounds(bounds);
+         * mEscena.addChild(ambientLightNode);
+         * 
+         * Vector3f light1Direction = new Vector3f(1.0f, 1.0f, -5f);
+         * 
+         * DirectionalLight light1 =
+         * new DirectionalLight(lightColor, light1Direction);
+         * light1.setInfluencingBounds(bounds);
+         * 
+         * mEscena.addChild(light1);
+         * 
+         * 
+         * mUniverso.addBranchGraph(mEscena);
+         * 
+         * } catch (Exception ex) {
+         * ex.printStackTrace();
+         * } finally {
+         * }
+         * 
+         */
         this.add(panel, BorderLayout.CENTER);
 
     }
@@ -345,16 +344,16 @@ public class frmMain extends JFrame {
 
         giroX.addChild(Tools.trasladar(0, 0, 0.50f, giroRuedaTraseraDerecha));
         giroX.addChild(Tools.trasladar(0, 0, -0.50f,
-                                       giroRuedaTraseraIzquierda));
+                giroRuedaTraseraIzquierda));
 
         giroX.addChild(Tools.trasladar(1.85f, 0, 0.50f,
-                                       timonRuedaDelanteraDerecha));
+                timonRuedaDelanteraDerecha));
         giroX.addChild(Tools.trasladar(1.85f, 0, -0.50f,
-                                       timonRuedaDelanteraIzquierda));
+                timonRuedaDelanteraIzquierda));
 
         giroX.addChild(Tools.trasladar(-0.6f, 0.50f, 0.18f,
-                                       Tools.rotarY(Math.PI / 2,
-                                                    CarBuilder.getRueda())));
+                Tools.rotarY(Math.PI / 2,
+                        CarBuilder.getRueda())));
 
         Node carBody = CarBuilder.getBody();
         giroX.addChild(carBody);
@@ -375,8 +374,8 @@ public class frmMain extends JFrame {
 
         CarBehavior car = new CarBehavior();
 
-        //Node pista = MapBuilder.getPistaB(); //MapBuilder.getPistaA();
-        Node pista = MapBuilder.getPistaB();
+        // Node pista = MapBuilder.getPistaB(); //MapBuilder.getPistaA();
+        Node pista = MapBuilder.getPistaA();
 
         BranchGroup bg2 = new BranchGroup();
 
@@ -391,8 +390,8 @@ public class frmMain extends JFrame {
         car.setTimerLabel(mTimer);
 
         car.setSpeedLabel(mSpeed);
-        
-        car.setLaps( mLaps );
+
+        car.setLaps(mLaps);
 
         CB = car;
 
@@ -417,7 +416,7 @@ public class frmMain extends JFrame {
         car.setTimonRuedaDelanteraIzquierda(timonRuedaDelanteraIzquierda);
 
         car.setSchedulingBounds(new BoundingSphere(new Point3d(0.0, 0.0, 0.0),
-                                                   Double.POSITIVE_INFINITY));
+                Double.POSITIVE_INFINITY));
 
         car.setUniverso(mUniverso);
         car.setCuerpoDelCarro(carBody);
@@ -426,9 +425,8 @@ public class frmMain extends JFrame {
         Appearance fl = Tools.cargarTextura("c:\\3d\\fline.png");
         Appearance negro = Tools.generarApariencia(Color.BLACK);
 
-        Box b =
-            new Box(0.20f, 0.1f, 2.5f, Box.GENERATE_NORMALS | Box.GENERATE_TEXTURE_COORDS,
-                    negro);
+        Box b = new Box(0.20f, 0.1f, 2.5f, Box.GENERATE_NORMALS | Box.GENERATE_TEXTURE_COORDS,
+                negro);
 
         b.getShape(Box.TOP).setAppearance(fl);
         b.setCollidable(true);
@@ -437,7 +435,7 @@ public class frmMain extends JFrame {
 
         CollisionDetector de = new CollisionDetector(b);
         de.setSchedulingBounds(new BoundingSphere(new Point3d(0.0, 0.0, 0.0),
-                                                  Double.POSITIVE_INFINITY));
+                Double.POSITIVE_INFINITY));
         de.setEnable(true);
         de.setCarB(car);
 
@@ -462,8 +460,7 @@ public class frmMain extends JFrame {
         naranja.set(Color.ORANGE);
         Color3f verde = new Color3f();
         verde.set(Color.GREEN);
-        Text2D msgCero =
-            new Text2D("INICIO!", verde, "Tahoma", 150, Font.BOLD);
+        Text2D msgCero = new Text2D("INICIO!", verde, "Tahoma", 150, Font.BOLD);
         Text2D msgUno = new Text2D("1", naranja, "Tahoma", 150, Font.BOLD);
         Text2D msgDos = new Text2D("2", amarillo, "Tahoma", 150, Font.BOLD);
         Text2D msgTres = new Text2D("3", rojo, "Tahoma", 150, Font.BOLD);
@@ -481,11 +478,11 @@ public class frmMain extends JFrame {
         car.setTextos(sw);
 
         mEscena.addChild(Tools.trasladar(4, 1.0, 0,
-                                         Tools.rotarY(-Math.PI / 2, sw)));
+                Tools.rotarY(-Math.PI / 2, sw)));
         car.setEnable(true);
-        
+
         car.reiniciar();
-        
+
     }
 
     private void jButton1_actionPerformed(ActionEvent e) {
@@ -497,6 +494,5 @@ public class frmMain extends JFrame {
         // boton 2
         CB.setMoverCamara(!CB.isMoverCamara());
     }
-
 
 }
