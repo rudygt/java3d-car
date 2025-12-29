@@ -12,8 +12,11 @@ import org.scijava.vecmath.Vector3d;
  * segments.
  */
 public class TrackBuilder {
-    private Group root;
-    private Transform3D cursor;
+    // MapBuilder uses a 10.0 radius for both left and right curves.
+    private static final double DEFAULT_CURVE_RADIUS = 10.0;
+
+    private final Group root;
+    private final Transform3D cursor;
 
     public TrackBuilder() {
         this.root = new Group();
@@ -47,20 +50,7 @@ public class TrackBuilder {
 
     public TrackBuilder curveRight(double angle) {
         Node segment = MapBuilder.getCurvaDerecha(angle);
-        // MapBuilder's curve right ends with a specific orientation and position.
-        // We need to calculate the delta based on the curve radius (default 10.0 in
-        // MapBuilder)
-        double radius = 10.0;
-        double dx = Math.sin(angle) * radius;
-        double dz = radius - Math.cos(angle) * radius;
-
-        Transform3D delta = new Transform3D();
-        delta.setTranslation(new Vector3d(dx, 0, dz));
-        Transform3D rot = new Transform3D();
-        rot.rotY(-angle);
-        delta.mul(rot);
-
-        return add(segment, delta);
+        return addCurve(segment, angle, 0.0, true);
     }
 
     public TrackBuilder curveLeft() {
@@ -69,47 +59,17 @@ public class TrackBuilder {
 
     public TrackBuilder curveLeft(double angle) {
         Node segment = MapBuilder.getCurvaIzquierda(angle);
-        double radius = 10.0;
-        double dx = Math.sin(angle) * radius;
-        double dz = -(radius - Math.cos(angle) * radius);
-
-        Transform3D delta = new Transform3D();
-        delta.setTranslation(new Vector3d(dx, 0, dz));
-        Transform3D rot = new Transform3D();
-        rot.rotY(angle);
-        delta.mul(rot);
-
-        return add(segment, delta);
+        return addCurve(segment, angle, 0.0, false);
     }
 
     public TrackBuilder curveRightWithHeight(double angle, int height) {
         Node segment = MapBuilder.getCurvaDerecha(angle, height);
-        double radius = 10.0;
-        double dx = Math.sin(angle) * radius;
-        double dz = radius - Math.cos(angle) * radius;
-
-        Transform3D delta = new Transform3D();
-        delta.setTranslation(new Vector3d(dx, height, dz));
-        Transform3D rot = new Transform3D();
-        rot.rotY(-angle);
-        delta.mul(rot);
-
-        return add(segment, delta);
+        return addCurve(segment, angle, height, true);
     }
 
     public TrackBuilder curveLeftWithHeight(double angle, int height) {
         Node segment = MapBuilder.getCurvaIzquierda(angle, height);
-        double radius = 10.0;
-        double dx = Math.sin(angle) * radius;
-        double dz = -(radius - Math.cos(angle) * radius);
-
-        Transform3D delta = new Transform3D();
-        delta.setTranslation(new Vector3d(dx, height, dz));
-        Transform3D rot = new Transform3D();
-        rot.rotY(angle);
-        delta.mul(rot);
-
-        return add(segment, delta);
+        return addCurve(segment, angle, height, false);
     }
 
     public TrackBuilder hill(double height, int length) {
@@ -146,6 +106,31 @@ public class TrackBuilder {
         trans.setTranslation(new Vector3d(x, y, z));
         cursor.mul(trans);
         return this;
+    }
+
+    private TrackBuilder addCurve(Node segment, double angle, double height, boolean clockwise) {
+        return add(segment, buildCurveTransform(angle, height, clockwise));
+    }
+
+    private Transform3D buildCurveTransform(double angle, double height, boolean clockwise) {
+        Vector3d translation = curveOffset(angle, height, clockwise);
+
+        Transform3D delta = new Transform3D();
+        delta.setTranslation(translation);
+
+        Transform3D rot = new Transform3D();
+        rot.rotY(clockwise ? -angle : angle);
+        delta.mul(rot);
+
+        return delta;
+    }
+
+    private Vector3d curveOffset(double angle, double height, boolean clockwise) {
+        double dx = Math.sin(angle) * DEFAULT_CURVE_RADIUS;
+        double dzOffset = DEFAULT_CURVE_RADIUS - Math.cos(angle) * DEFAULT_CURVE_RADIUS;
+        double dz = clockwise ? dzOffset : -dzOffset;
+
+        return new Vector3d(dx, height, dz);
     }
 
     public Group build() {
