@@ -1,26 +1,26 @@
 package test;
 
-import org.scijava.java3d.utils.geometry.Cylinder;
+import org.jogamp.java3d.utils.geometry.Cylinder;
 
-import org.scijava.java3d.utils.geometry.GeometryInfo;
-import org.scijava.java3d.utils.geometry.NormalGenerator;
-import org.scijava.java3d.utils.geometry.Triangulator;
+import org.jogamp.java3d.utils.geometry.GeometryInfo;
+import org.jogamp.java3d.utils.geometry.NormalGenerator;
+import org.jogamp.java3d.utils.geometry.Triangulator;
 
 import java.awt.Color;
 
-import org.scijava.java3d.Appearance;
-import org.scijava.java3d.GeometryArray;
-import org.scijava.java3d.Group;
-import org.scijava.java3d.Node;
-import org.scijava.java3d.QuadArray;
-import org.scijava.java3d.Shape3D;
+import org.jogamp.java3d.Appearance;
+import org.jogamp.java3d.GeometryArray;
+import org.jogamp.java3d.Group;
+import org.jogamp.java3d.Node;
+import org.jogamp.java3d.QuadArray;
+import org.jogamp.java3d.Shape3D;
 
-import org.scijava.java3d.Transform3D;
-import org.scijava.java3d.TransformGroup;
+import org.jogamp.java3d.Transform3D;
+import org.jogamp.java3d.TransformGroup;
 
-import org.scijava.vecmath.Color3f;
-import org.scijava.vecmath.Point3d;
-import org.scijava.vecmath.TexCoord2f;
+import org.jogamp.vecmath.Color3f;
+import org.jogamp.vecmath.Point3d;
+import org.jogamp.vecmath.TexCoord2f;
 
 public class CarBuilder {
     
@@ -191,7 +191,7 @@ public class CarBuilder {
         }
 
         Color3f blanco = new Color3f();
-        blanco.set(Color.GRAY);
+        Tools.setColor(blanco, Color.GRAY);
 
         for (int i = 0; i < largo; i++) {
             colores[i] = blanco;

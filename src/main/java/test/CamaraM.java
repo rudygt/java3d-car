@@ -1,11 +1,11 @@
 package test;
 
-import org.scijava.java3d.utils.universe.SimpleUniverse;
+import org.jogamp.java3d.utils.universe.SimpleUniverse;
 
-import org.scijava.java3d.Transform3D;
-import org.scijava.java3d.TransformGroup;
+import org.jogamp.java3d.Transform3D;
+import org.jogamp.java3d.TransformGroup;
 
-import org.scijava.vecmath.Vector3d;
+import org.jogamp.vecmath.Vector3d;
  
 /**
  *

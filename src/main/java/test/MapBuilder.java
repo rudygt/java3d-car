@@ -1,23 +1,25 @@
 package test;
 
-import org.scijava.java3d.utils.geometry.GeometryInfo;
+import org.jogamp.java3d.utils.geometry.GeometryInfo;
 
-import org.scijava.java3d.utils.geometry.NormalGenerator;
+import org.jogamp.java3d.utils.geometry.NormalGenerator;
 
-import org.scijava.java3d.utils.picking.PickTool;
+import org.jogamp.java3d.utils.picking.PickTool;
 
-import org.scijava.java3d.Appearance;
-import org.scijava.java3d.Group;
-import org.scijava.java3d.Node;
+import org.jogamp.java3d.Appearance;
+import org.jogamp.java3d.Group;
+import org.jogamp.java3d.Node;
 
-import org.scijava.java3d.QuadArray;
-import org.scijava.java3d.Shape3D;
+import org.jogamp.java3d.QuadArray;
+import org.jogamp.java3d.Shape3D;
+import org.jogamp.java3d.PolygonAttributes;
+import org.jogamp.java3d.TextureAttributes;
 
-import org.scijava.java3d.Transform3D;
+import org.jogamp.java3d.Transform3D;
 
-import org.scijava.vecmath.Point3d;
-import org.scijava.vecmath.TexCoord2f;
-import org.scijava.vecmath.Vector3d;
+import org.jogamp.vecmath.Point3d;
+import org.jogamp.vecmath.TexCoord2f;
+import org.jogamp.vecmath.Vector3d;
 
 public class MapBuilder {
 
@@ -41,6 +43,10 @@ public class MapBuilder {
     static Transform3D siguiente = new Transform3D();
 
     static Appearance appPista = null;
+    static Appearance appPistaSimple = null;
+
+    static Transform3D actualSimple = new Transform3D();
+    static Transform3D siguienteSimple = new Transform3D();
 
     static TexCoord2f t0 = new TexCoord2f(1.0f, 68.0f / 166.0f);
     static TexCoord2f t1 = new TexCoord2f(1.0f, 0.99f);
@@ -142,6 +148,10 @@ public class MapBuilder {
 
         // Appearance app = Tools.generarApariencia( Color.BLUE );
         if (appPista == null) {
+            // pista.png is the original 678x166 atlas the t0..t7 coordinates
+            // were tuned for: asphalt + single long center dash on top, large
+            // wall blocks bottom-left. output.png is a regenerated variant
+            // with smaller bricks and denser dashes - do not swap it back in.
             appPista = Tools.cargarTextura("c:\\3d\\pista.png");
         }
 
@@ -156,6 +166,48 @@ public class MapBuilder {
 
         return forma;
 
+    }
+
+    public static Shape3D getSegmentoSimple() {
+
+        Point3d aLeft = new Point3d(0, 0, -semiAncho);
+        Point3d aRight = new Point3d(0, 0, semiAncho);
+        Point3d bLeft = new Point3d(0, 0, -semiAncho);
+        Point3d bRight = new Point3d(0, 0, semiAncho);
+
+        actualSimple.transform(aLeft);
+        actualSimple.transform(aRight);
+        siguienteSimple.transform(bLeft);
+        siguienteSimple.transform(bRight);
+
+        QuadArray data = new QuadArray(4,
+                QuadArray.COORDINATES | QuadArray.TEXTURE_COORDINATE_2 | QuadArray.NORMALS);
+
+        // Use winding that faces +Y so the top is visible with default culling.
+        Point3d[] coordenadas = { aLeft, aRight, bRight, bLeft };
+        // Map only the asphalt region of the atlas (same region the full
+        // profile uses for the road face), not the whole atlas.
+        TexCoord2f[] coordenadasT = { t3, t0, t1, t2 };
+
+        data.setCoordinates(0, coordenadas);
+        data.setTextureCoordinates(0, 0, coordenadasT);
+
+        GeometryInfo info = new GeometryInfo(GeometryInfo.QUAD_ARRAY);
+        info.reset(data);
+
+        NormalGenerator ng = new NormalGenerator();
+        ng.generateNormals(info);
+
+        if (appPistaSimple == null) {
+            appPistaSimple = Tools.cargarTextura("c:\\3d\\pista.png");
+        }
+
+        Shape3D forma = new Shape3D(info.getGeometryArray(), appPistaSimple);
+        forma.setCapability(Shape3D.ENABLE_PICK_REPORTING);
+        PickTool.setCapabilities(forma, PickTool.INTERSECT_FULL);
+        forma.setCollidable(false);
+
+        return forma;
     }
 
     public static Node getSegmentoRecto(double pLongitud) {
@@ -189,6 +241,37 @@ public class MapBuilder {
         return g;
     }
 
+    public static Node getSegmentoRectoSimple(double pLongitud) {
+
+        Group g = new Group();
+
+        actualSimple = new Transform3D();
+
+        int limite = (int) pLongitud;
+
+        for (int i = 1; i <= limite; i++) {
+
+            siguienteSimple = new Transform3D();
+            siguienteSimple.setTranslation(new Vector3d(i, 0, 0));
+
+            g.addChild(getSegmentoSimple());
+
+            actualSimple.set(siguienteSimple);
+
+        }
+
+        if ((pLongitud - (double) limite) > 0) {
+
+            siguienteSimple = new Transform3D();
+            siguienteSimple.setTranslation(new Vector3d(pLongitud, 0, 0));
+            g.addChild(getSegmentoSimple());
+            actualSimple.set(siguienteSimple);
+
+        }
+
+        return g;
+    }
+
     public static Node getPendiente(double pAltura, int pLongitud) {
 
         Group g = new Group();
@@ -207,6 +290,31 @@ public class MapBuilder {
             g.addChild(getSegmento());
 
             actual.set(siguiente);
+
+        }
+
+        return g;
+
+    }
+
+    public static Node getPendienteSimple(double pAltura, int pLongitud) {
+
+        Group g = new Group();
+
+        actualSimple = new Transform3D();
+
+        int limite = pLongitud;
+
+        double pasoAltura = pAltura / limite;
+
+        for (int i = 1; i <= limite; i++) {
+
+            siguienteSimple = new Transform3D();
+            siguienteSimple.setTranslation(new Vector3d(i, i * pasoAltura, 0));
+
+            g.addChild(getSegmentoSimple());
+
+            actualSimple.set(siguienteSimple);
 
         }
 
@@ -272,6 +380,62 @@ public class MapBuilder {
 
     }
 
+    public static Node getCaracolSimple(int pAltura) {
+
+        Group g = new Group();
+
+        actualSimple = new Transform3D();
+
+        Transform3D giro = new Transform3D();
+
+        int abs = Math.abs(pAltura);
+
+        int numSegmentos = 60 * abs;
+        double maxAngle = abs * Math.PI * 2;
+        double angStep = maxAngle / numSegmentos;
+        double anguloRad = angStep;
+
+        double x = 0.0;
+        double z = 0.0;
+
+        double dx = 0.0;
+        double dz = 0.0;
+        double dy = (double) pAltura * 5 / (double) numSegmentos;
+
+        double radioGiro = 15.0;
+
+        double xo = 0.0;
+        double zo = radioGiro;
+
+        double y = 0.0;
+
+        for (int i = 1; i <= numSegmentos; i++) {
+
+            anguloRad = angStep * i;
+
+            dx = Math.sin(anguloRad) * radioGiro;
+            dz = -Math.cos(anguloRad) * radioGiro;
+
+            x = xo + dx;
+            z = zo + dz;
+            y = y + dy;
+
+            giro.rotY(-anguloRad);
+
+            siguienteSimple = new Transform3D();
+            siguienteSimple.setTranslation(new Vector3d(x, y, z));
+            siguienteSimple.mul(giro);
+
+            g.addChild(getSegmentoSimple());
+
+            actualSimple.set(siguienteSimple);
+
+        }
+
+        return g;
+
+    }
+
     public static Node getCurvaDerecha(double pAngulo) {
 
         Group g = new Group();
@@ -318,6 +482,59 @@ public class MapBuilder {
             g.addChild(getSegmento());
 
             actual.set(siguiente);
+
+        }
+
+        return g;
+
+    }
+
+    public static Node getCurvaDerechaSimple(double pAngulo) {
+
+        Group g = new Group();
+
+        actualSimple = new Transform3D();
+
+        Transform3D giro = new Transform3D();
+
+        double temp = pAngulo / (Math.PI / 2);
+        temp = temp * 15.0;
+        int numSegmentos = (int) temp;
+
+        double maxAngle = pAngulo;
+        double angStep = maxAngle / numSegmentos;
+        double anguloRad = angStep;
+
+        double x = 0.0;
+        double z = 0.0;
+
+        double dx = 0.0;
+        double dz = 0.0;
+
+        double radioGiro = 10.0;
+
+        double xo = 0.0;
+        double zo = radioGiro;
+
+        for (int i = 1; i <= numSegmentos; i++) {
+
+            anguloRad = angStep * i;
+
+            dx = Math.sin(anguloRad) * radioGiro;
+            dz = -Math.cos(anguloRad) * radioGiro;
+
+            x = xo + dx;
+            z = zo + dz;
+
+            giro.rotY(-anguloRad);
+
+            siguienteSimple = new Transform3D();
+            siguienteSimple.setTranslation(new Vector3d(x, 0, z));
+            siguienteSimple.mul(giro);
+
+            g.addChild(getSegmentoSimple());
+
+            actualSimple.set(siguienteSimple);
 
         }
 
@@ -390,6 +607,59 @@ public class MapBuilder {
 
     }
 
+    public static Node getCurvaIzquierdaSimple(double pAngulo) {
+
+        Group g = new Group();
+
+        actualSimple = new Transform3D();
+
+        Transform3D giro = new Transform3D();
+
+        double temp = pAngulo / (Math.PI / 2);
+        temp = temp * 15.0;
+        int numSegmentos = (int) temp;
+
+        double maxAngle = pAngulo;
+        double angStep = maxAngle / numSegmentos;
+        double anguloRad = angStep;
+
+        double x = 0.0;
+        double z = 0.0;
+
+        double dx = 0.0;
+        double dz = 0.0;
+
+        double radioGiro = 10.0;
+
+        double xo = 0.0;
+        double zo = -radioGiro;
+
+        for (int i = 1; i <= numSegmentos; i++) {
+
+            anguloRad = angStep * i;
+
+            dx = Math.sin(anguloRad) * radioGiro;
+            dz = Math.cos(anguloRad) * radioGiro;
+
+            x = xo + dx;
+            z = zo + dz;
+
+            giro.rotY(anguloRad);
+
+            siguienteSimple = new Transform3D();
+            siguienteSimple.setTranslation(new Vector3d(x, 0, z));
+            siguienteSimple.mul(giro);
+
+            g.addChild(getSegmentoSimple());
+
+            actualSimple.set(siguienteSimple);
+
+        }
+
+        return g;
+
+    }
+
     public static Node getCurvaDerecha(double pAngulo, int pAltura) {
 
         Group g = new Group();
@@ -448,6 +718,64 @@ public class MapBuilder {
 
     }
 
+    public static Node getCurvaDerechaSimple(double pAngulo, int pAltura) {
+
+        Group g = new Group();
+
+        actualSimple = new Transform3D();
+
+        Transform3D giro = new Transform3D();
+
+        double temp = pAngulo / (Math.PI / 2);
+        temp = temp * 15.0;
+        int numSegmentos = (int) temp;
+
+        double pasoAltura = (double) pAltura / numSegmentos;
+
+        double maxAngle = pAngulo;
+        double angStep = maxAngle / numSegmentos;
+        double anguloRad = angStep;
+
+        double x = 0.0;
+        double z = 0.0;
+
+        double dx = 0.0;
+        double dz = 0.0;
+
+        double radioGiro = 10.0;
+
+        double xo = 0.0;
+        double zo = radioGiro;
+
+        int i = 1;
+
+        while (anguloRad <= maxAngle) {
+
+            dx = Math.sin(anguloRad) * radioGiro;
+            dz = -Math.cos(anguloRad) * radioGiro;
+
+            x = xo + dx;
+            z = zo + dz;
+
+            giro.rotY(-anguloRad);
+
+            siguienteSimple = new Transform3D();
+            siguienteSimple.setTranslation(new Vector3d(x, pasoAltura * i, z));
+            siguienteSimple.mul(giro);
+
+            g.addChild(getSegmentoSimple());
+
+            actualSimple.set(siguienteSimple);
+
+            anguloRad += angStep;
+
+            i++;
+        }
+
+        return g;
+
+    }
+
     public static Node getCurvaIzquierda(double pAngulo, int pAltura) {
 
         Group g = new Group();
@@ -496,6 +824,63 @@ public class MapBuilder {
             g.addChild(getSegmento());
 
             actual.set(siguiente);
+
+            anguloRad += angStep;
+            i++;
+        }
+
+        return g;
+
+    }
+
+    public static Node getCurvaIzquierdaSimple(double pAngulo, int pAltura) {
+
+        Group g = new Group();
+
+        actualSimple = new Transform3D();
+
+        Transform3D giro = new Transform3D();
+
+        double temp = pAngulo / (Math.PI / 2);
+        temp = temp * 15.0;
+        int numSegmentos = (int) temp;
+
+        double pasoAltura = (double) pAltura / numSegmentos;
+
+        double maxAngle = pAngulo;
+        double angStep = maxAngle / numSegmentos;
+        double anguloRad = angStep;
+
+        double x = 0.0;
+        double z = 0.0;
+
+        double dx = 0.0;
+        double dz = 0.0;
+
+        double radioGiro = 10.0;
+
+        double xo = 0.0;
+        double zo = -radioGiro;
+
+        int i = 1;
+
+        while (anguloRad <= maxAngle) {
+
+            dx = Math.sin(anguloRad) * radioGiro;
+            dz = Math.cos(anguloRad) * radioGiro;
+
+            x = xo + dx;
+            z = zo + dz;
+
+            giro.rotY(anguloRad);
+
+            siguienteSimple = new Transform3D();
+            siguienteSimple.setTranslation(new Vector3d(x, i * pasoAltura, z));
+            siguienteSimple.mul(giro);
+
+            g.addChild(getSegmentoSimple());
+
+            actualSimple.set(siguienteSimple);
 
             anguloRad += angStep;
             i++;
@@ -589,6 +974,14 @@ public class MapBuilder {
         ng.generateNormals(info);
 
         Appearance app = Tools.cargarTextura(pTextura);
+
+        PolygonAttributes pa = new PolygonAttributes();
+        pa.setCullFace(PolygonAttributes.CULL_NONE);
+        app.setPolygonAttributes(pa);
+
+        TextureAttributes ta = new TextureAttributes();
+        ta.setTextureMode(TextureAttributes.REPLACE);
+        app.setTextureAttributes(ta);
 
         app.setMaterial(null);
 

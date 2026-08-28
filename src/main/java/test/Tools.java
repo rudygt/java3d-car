@@ -1,17 +1,17 @@
 package test;
 
-import org.scijava.java3d.*;
-import org.scijava.java3d.utils.geometry.*;
-import org.scijava.java3d.utils.image.TextureLoader;
-import org.scijava.java3d.utils.picking.PickTool;
-import org.scijava.vecmath.*;
+import org.jogamp.java3d.*;
+import org.jogamp.java3d.utils.geometry.*;
+import org.jogamp.java3d.utils.image.TextureLoader;
+import org.jogamp.java3d.utils.picking.PickTool;
+import org.jogamp.vecmath.*;
 
 import javax.imageio.ImageIO;
 import java.awt.*;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.URL;
-import java.util.Enumeration;
+import java.util.Iterator;
 
 public class Tools {
 
@@ -30,10 +30,9 @@ public class Tools {
 
             Group group = (Group) node;
 
-            for (Enumeration e = group.getAllChildren(); e.hasMoreElements();
-            ) {
+            for (Iterator<Node> e = group.getAllChildren(); e.hasNext();) {
 
-                enablePicking((Node) e.nextElement());
+                enablePicking(e.next());
 
             }
 
@@ -49,12 +48,11 @@ public class Tools {
 
             PickTool.setCapabilities(node, PickTool.INTERSECT_FULL);
 
-            for (Enumeration e = shape.getAllGeometries(); e.hasMoreElements();
-            ) {
+            for (Iterator<Geometry> e = shape.getAllGeometries(); e.hasNext();) {
 
-                Geometry g = (Geometry) e.nextElement();
+                Geometry g = e.next();
 
-                g.setCapability(g.ALLOW_INTERSECT);
+                g.setCapability(Geometry.ALLOW_INTERSECT);
 
             }
 
@@ -202,7 +200,7 @@ public class Tools {
         }
 
         Color3f blanco = new Color3f();
-        blanco.set(Color.GRAY);
+        setColor(blanco, Color.GRAY);
 
         for (int i = 0; i < largo; i++) {
             colores[i] = blanco;
@@ -743,13 +741,20 @@ public class Tools {
 
     }
 
+    // JogAmp's vecmath dropped Color3f.set(java.awt.Color); convert manually.
+    public static void setColor(Color3f pDestino, Color pColor) {
+        pDestino.set(pColor.getRed() / 255.0f,
+                pColor.getGreen() / 255.0f,
+                pColor.getBlue() / 255.0f);
+    }
+
     public static Appearance generarApariencia(Color pColor) {
 
         Appearance apariencia = new Appearance();
 
         Color3f c = new Color3f();
 
-        c.set(pColor);
+        setColor(c, pColor);
 
         Material mat = new Material();
         mat.setAmbientColor(c);

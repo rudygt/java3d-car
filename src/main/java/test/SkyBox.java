@@ -1,9 +1,9 @@
 package test;
 
-import org.scijava.java3d.utils.geometry.*;
+import org.jogamp.java3d.utils.geometry.*;
 
-import org.scijava.java3d.*;
-import org.scijava.vecmath.*;
+import org.jogamp.java3d.*;
+import org.jogamp.vecmath.*;
 
 /*******************************************************************************
  * This class can be used to create a SkyBox to hold the background image. It

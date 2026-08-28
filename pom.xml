@@ -8,30 +8,46 @@
     <artifactId>Java3dCar</artifactId>
     <version>1.0-SNAPSHOT</version>
 
+    <repositories>
+        <!-- JogAmp's Java3D 1.7.x is not published to Maven Central; the jars
+             from jogamp.org/deployment/java3d/1.7.1-final are vendored into
+             lib/ as a project-local repository. -->
+        <repository>
+            <id>project-lib</id>
+            <url>file://${project.basedir}/lib</url>
+        </repository>
+    </repositories>
+
     <dependencies>
 
         <dependency>
-            <groupId>org.scijava</groupId>
+            <groupId>org.jogamp.java3d</groupId>
             <artifactId>j3dcore</artifactId>
-            <version>1.6.0-scijava-2</version>
+            <version>1.7.1</version>
         </dependency>
 
         <dependency>
-            <groupId>org.scijava</groupId>
+            <groupId>org.jogamp.java3d</groupId>
             <artifactId>j3dutils</artifactId>
-            <version>1.6.0-scijava-2</version>
+            <version>1.7.1</version>
+        </dependency>
+
+        <dependency>
+            <groupId>org.jogamp.java3d</groupId>
+            <artifactId>vecmath</artifactId>
+            <version>1.7.1</version>
         </dependency>
 
         <dependency>
             <groupId>org.jogamp.gluegen</groupId>
             <artifactId>gluegen-rt-main</artifactId>
-            <version>2.3.2</version>
+            <version>2.6.0</version>
         </dependency>
 
         <dependency>
             <groupId>org.jogamp.jogl</groupId>
             <artifactId>jogl-all-main</artifactId>
-            <version>2.3.2</version>
+            <version>2.6.0</version>
         </dependency>
 
     </dependencies>
@@ -45,6 +61,12 @@
                         <manifest>
                             <mainClass>test.Main</mainClass>
                         </manifest>
+                        <manifestEntries>
+                            <!-- JOGL's AWT interop reflects into these JDK
+                                 internals; required on JDK 16+ where strong
+                                 encapsulation blocks it (harmless on 11). -->
+                            <Add-Exports>java.desktop/sun.awt java.desktop/sun.java2d</Add-Exports>
+                        </manifestEntries>
                     </archive>
                     <descriptorRefs>
                         <descriptorRef>jar-with-dependencies</descriptorRef>

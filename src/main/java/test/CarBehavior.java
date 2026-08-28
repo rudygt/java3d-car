@@ -1,8 +1,8 @@
 package test;
 
 
-import org.scijava.java3d.utils.behaviors.vp.OrbitBehavior;
-import org.scijava.java3d.utils.universe.SimpleUniverse;
+import org.jogamp.java3d.utils.behaviors.vp.OrbitBehavior;
+import org.jogamp.java3d.utils.universe.SimpleUniverse;
 
 import java.awt.event.KeyEvent;
 
@@ -10,23 +10,24 @@ import java.text.DecimalFormat;
 import java.text.SimpleDateFormat;
 
 import java.util.Date;
-import java.util.Enumeration;
+import java.util.Iterator;
 
-import org.scijava.java3d.Behavior;
-import org.scijava.java3d.BranchGroup;
-import org.scijava.java3d.Node;
-import org.scijava.java3d.PickInfo;
-import org.scijava.java3d.PickSegment;
-import org.scijava.java3d.Switch;
-import org.scijava.java3d.Transform3D;
-import org.scijava.java3d.TransformGroup;
-import org.scijava.java3d.WakeupCondition;
-import org.scijava.java3d.WakeupOnElapsedFrames;
+import org.jogamp.java3d.Behavior;
+import org.jogamp.java3d.BranchGroup;
+import org.jogamp.java3d.Node;
+import org.jogamp.java3d.PickInfo;
+import org.jogamp.java3d.PickSegment;
+import org.jogamp.java3d.Switch;
+import org.jogamp.java3d.Transform3D;
+import org.jogamp.java3d.TransformGroup;
+import org.jogamp.java3d.WakeupCondition;
+import org.jogamp.java3d.WakeupCriterion;
+import org.jogamp.java3d.WakeupOnElapsedFrames;
 
 import javax.swing.JLabel;
 
-import org.scijava.vecmath.Point3d;
-import org.scijava.vecmath.Vector3d;
+import org.jogamp.vecmath.Point3d;
+import org.jogamp.vecmath.Vector3d;
 
 
 public class CarBehavior extends Behavior {
@@ -302,7 +303,7 @@ public class CarBehavior extends Behavior {
         wakeupOn(wakeupCondition);
     }
 
-    public void processStimulus(Enumeration enumeration) {
+    public void processStimulus(Iterator<WakeupCriterion> enumeration) {
 
         mFrameCounter++;
 

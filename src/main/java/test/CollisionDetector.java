@@ -1,11 +1,12 @@
 package test;
 
-import java.util.Enumeration;
+import java.util.Iterator;
 
-import org.scijava.java3d.Behavior;
-import org.scijava.java3d.Node;
-import org.scijava.java3d.WakeupOnCollisionEntry;
-import org.scijava.java3d.WakeupOnCollisionExit;
+import org.jogamp.java3d.Behavior;
+import org.jogamp.java3d.Node;
+import org.jogamp.java3d.WakeupCriterion;
+import org.jogamp.java3d.WakeupOnCollisionEntry;
+import org.jogamp.java3d.WakeupOnCollisionExit;
 
 
 class CollisionDetector extends Behavior {
@@ -35,7 +36,7 @@ class CollisionDetector extends Behavior {
     wakeupOn(wEnter);
   }
 
-  public void processStimulus(Enumeration criteria) {
+  public void processStimulus(Iterator<WakeupCriterion> criteria) {
       
     inCollision = !inCollision;
 

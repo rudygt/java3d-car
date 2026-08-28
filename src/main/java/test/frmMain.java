@@ -1,41 +1,39 @@
 package test;
 
-import org.scijava.java3d.utils.behaviors.vp.OrbitBehavior;
-import org.scijava.java3d.utils.geometry.Box;
-import org.scijava.java3d.utils.geometry.Sphere;
-import org.scijava.java3d.utils.geometry.Text2D;
-import org.scijava.java3d.utils.picking.PickIntersection;
-import org.scijava.java3d.utils.picking.PickResult;
-import org.scijava.java3d.utils.picking.PickTool;
-import org.scijava.java3d.utils.universe.SimpleUniverse;
+import org.jogamp.java3d.utils.behaviors.vp.OrbitBehavior;
+import org.jogamp.java3d.utils.geometry.Box;
+import org.jogamp.java3d.utils.geometry.Sphere;
+import org.jogamp.java3d.utils.geometry.Text2D;
+import org.jogamp.java3d.utils.picking.PickIntersection;
+import org.jogamp.java3d.utils.picking.PickResult;
+import org.jogamp.java3d.utils.picking.PickTool;
+import org.jogamp.java3d.utils.universe.SimpleUniverse;
 
 import java.awt.BorderLayout;
 import java.awt.Color;
-import java.awt.Dimension;
 import java.awt.Font;
 import java.awt.GraphicsDevice;
 import java.awt.GraphicsEnvironment;
-import java.awt.Toolkit;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 
 import java.io.BufferedInputStream;
 import java.io.FileInputStream;
 
-import org.scijava.java3d.AmbientLight;
-import org.scijava.java3d.Appearance;
-import org.scijava.java3d.Background;
-import org.scijava.java3d.BackgroundSound;
-import org.scijava.java3d.BoundingSphere;
-import org.scijava.java3d.BranchGroup;
-import org.scijava.java3d.Canvas3D;
-import org.scijava.java3d.DirectionalLight;
-import org.scijava.java3d.MediaContainer;
-import org.scijava.java3d.Node;
-import org.scijava.java3d.PointSound;
-import org.scijava.java3d.Switch;
-import org.scijava.java3d.Transform3D;
-import org.scijava.java3d.TransformGroup;
+import org.jogamp.java3d.AmbientLight;
+import org.jogamp.java3d.Appearance;
+import org.jogamp.java3d.Background;
+import org.jogamp.java3d.BackgroundSound;
+import org.jogamp.java3d.BoundingSphere;
+import org.jogamp.java3d.BranchGroup;
+import org.jogamp.java3d.Canvas3D;
+import org.jogamp.java3d.DirectionalLight;
+import org.jogamp.java3d.MediaContainer;
+import org.jogamp.java3d.Node;
+import org.jogamp.java3d.PointSound;
+import org.jogamp.java3d.Switch;
+import org.jogamp.java3d.Transform3D;
+import org.jogamp.java3d.TransformGroup;
 
 import javax.swing.JButton;
 import javax.swing.JFrame;
@@ -44,14 +42,17 @@ import javax.swing.JPanel;
 
 import javax.swing.SwingConstants;
 
-import org.scijava.vecmath.Color3f;
-import org.scijava.vecmath.Point2f;
-import org.scijava.vecmath.Point3d;
-import org.scijava.vecmath.Point3f;
-import org.scijava.vecmath.Vector3d;
-import org.scijava.vecmath.Vector3f;
+import org.jogamp.vecmath.Color3f;
+import org.jogamp.vecmath.Point2f;
+import org.jogamp.vecmath.Point3d;
+import org.jogamp.vecmath.Point3f;
+import org.jogamp.vecmath.Vector3d;
+import org.jogamp.vecmath.Vector3f;
 
 public class frmMain extends JFrame {
+
+    // Track options: "pista-a", "pista-b", "simple-demo".
+    private static final String TRACK_ID = "simple-demo";
 
     private BranchGroup mEscena = null;
     private SimpleUniverse mUniverso = null;
@@ -80,11 +81,11 @@ public class frmMain extends JFrame {
 
     private void jbInit() throws Exception {
 
-        setUndecorated(false);
-        Dimension screenSize = Toolkit.getDefaultToolkit().getScreenSize();
-        setBounds(0, 0, (int) screenSize.getWidth(), (int) screenSize.getHeight());
+        // Use MAXIMIZED_BOTH instead of manual bounds to handle title bars/taskbars
+        // correctly
+        this.setExtendedState(JFrame.MAXIMIZED_BOTH);
         this.getContentPane().setLayout(new BorderLayout());
-        this.setTitle("Java3D");
+        this.setTitle("Java3D Car Debug");
         this.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         this.setBackground(Color.black);
         jPanel1.setBackground(Color.black);
@@ -107,9 +108,9 @@ public class frmMain extends JFrame {
         mLaps.setFont(new Font("Tahoma", 1, 30));
         mLaps.setForeground(Color.yellow);
         mLaps.setHorizontalAlignment(SwingConstants.LEFT);
-        jPanel1.add(mTimer, BorderLayout.EAST);
-        jPanel1.add(mSpeed, BorderLayout.CENTER);
         jPanel1.add(mLaps, BorderLayout.WEST);
+        jPanel1.add(mSpeed, BorderLayout.CENTER);
+        jPanel1.add(mTimer, BorderLayout.EAST);
         this.getContentPane().add(jPanel1, BorderLayout.NORTH);
 
         // crear el panel 3d
@@ -155,9 +156,10 @@ public class frmMain extends JFrame {
 
         universo.getViewer().getView().setBackClipDistance(3000);
 
-        Background bg = new Background();
+        Background bg = new Background(new Color3f(0.17f, 0.65f, 0.92f)); // Sky Blue
         bg.setApplicationBounds(new BoundingSphere(new Point3d(0.0, 0.0, 0.0),
-                55));
+                Double.POSITIVE_INFINITY));
+        mEscena.addChild(bg);
         BranchGroup backGeoBranch = new BranchGroup();
 
         /*
@@ -303,8 +305,17 @@ public class frmMain extends JFrame {
          * }
          * 
          */
-        this.add(panel, BorderLayout.CENTER);
+        this.getContentPane().add(panel, BorderLayout.CENTER);
 
+        // Debug prints to see the actual size of the components
+        this.addComponentListener(new java.awt.event.ComponentAdapter() {
+            public void componentResized(java.awt.event.ComponentEvent e) {
+                System.out.println("Frame Size: " + getSize());
+                System.out.println("Canvas Size: " + panel.getSize());
+                System.out.println("HUD Size: " + jPanel1.getSize());
+                System.out.println("Canvas Visible: " + panel.isVisible());
+            }
+        });
     }
 
     private void dosetup(Canvas3D panel) {
@@ -374,8 +385,7 @@ public class frmMain extends JFrame {
 
         CarBehavior car = new CarBehavior();
 
-        // Node pista = MapBuilder.getPistaB(); //MapBuilder.getPistaA();
-        Node pista = MapBuilder.getPistaA();
+        Node pista = buildTrack();
 
         BranchGroup bg2 = new BranchGroup();
 
@@ -453,13 +463,13 @@ public class frmMain extends JFrame {
 
         /* texto inicio */
         Color3f amarillo = new Color3f();
-        amarillo.set(Color.YELLOW);
+        Tools.setColor(amarillo, Color.YELLOW);
         Color3f rojo = new Color3f();
-        rojo.set(Color.RED);
+        Tools.setColor(rojo, Color.RED);
         Color3f naranja = new Color3f();
-        naranja.set(Color.ORANGE);
+        Tools.setColor(naranja, Color.ORANGE);
         Color3f verde = new Color3f();
-        verde.set(Color.GREEN);
+        Tools.setColor(verde, Color.GREEN);
         Text2D msgCero = new Text2D("INICIO!", verde, "Tahoma", 150, Font.BOLD);
         Text2D msgUno = new Text2D("1", naranja, "Tahoma", 150, Font.BOLD);
         Text2D msgDos = new Text2D("2", amarillo, "Tahoma", 150, Font.BOLD);
@@ -483,6 +493,16 @@ public class frmMain extends JFrame {
 
         car.reiniciar();
 
+    }
+
+    private Node buildTrack() {
+        if ("pista-b".equals(TRACK_ID)) {
+            return MapBuilder.getPistaB();
+        }
+        if ("simple-demo".equals(TRACK_ID)) {
+            return TrackCatalog.getSimpleDemoTrack();
+        }
+        return MapBuilder.getPistaA();
     }
 
     private void jButton1_actionPerformed(ActionEvent e) {

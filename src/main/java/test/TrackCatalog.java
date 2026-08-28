@@ -1,6 +1,6 @@
 package test;
 
-import org.scijava.java3d.Node;
+import org.jogamp.java3d.Node;
 
 /**
  * Catalog of legacy track layouts saved for reference.
@@ -43,6 +43,24 @@ public class TrackCatalog {
                 .straight(35.6)
                 .curveLeft(Math.PI / 2)
                 .straight(28.01)
+                .build();
+    }
+
+    public static Node getSimpleDemoTrack() {
+        // Full-profile builder: road surface plus the raised brick side walls.
+        // SimpleTrackBuilder renders only a flat top ribbon (no walls).
+        return new TrackBuilder()
+                .translate(0, 0, 0)
+                .straight(40)
+                .hill(4, 20)
+                .hill(-4, 20)
+                .curveRight(Math.PI / 2)
+                .straight(25)
+                .curveRight(Math.PI / 2)
+                .straight(80)
+                .curveRight(Math.PI / 2)
+                .straight(25)
+                .curveRight(Math.PI / 2)
                 .build();
     }
 }
