@@ -717,9 +717,16 @@ public class Tools {
         }
 
         TextureLoader loader =
-                new TextureLoader(image, TextureLoader.BY_REFERENCE, null);
+                new TextureLoader(image, "RGB", TextureLoader.GENERATE_MIPMAP, null);
 
         Texture tex = loader.getTexture();
+
+        // Trilinear + anisotropic filtering: without mipmaps the road
+        // texture aliases badly at the shallow angles a driving camera sees.
+        tex.setMinFilter(Texture.MULTI_LEVEL_LINEAR);
+        tex.setMagFilter(Texture.BASE_LEVEL_LINEAR);
+        tex.setAnisotropicFilterMode(Texture.ANISOTROPIC_SINGLE_VALUE);
+        tex.setAnisotropicFilterDegree(8.0f);
 
         TextureAttributes texAttr = new TextureAttributes();
 
@@ -733,7 +740,10 @@ public class Tools {
         m.setAmbientColor(0.7f, 0.7f, 0.7f);
         m.setDiffuseColor(0.7f, 0.7f, 0.7f);
         m.setEmissiveColor(0.0f, 0.0f, 0.0f);
-        m.setSpecularColor(0.2f, 0.2f, 0.2f);
+        // Matte: asphalt, brick, sand and tires must not catch a specular
+        // sheen from the directional light (washed the whole road out gray
+        // at the mirror angle between the light and the camera).
+        m.setSpecularColor(0.0f, 0.0f, 0.0f);
 
         app.setMaterial(m);
 

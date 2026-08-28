@@ -13,6 +13,7 @@ import org.jogamp.java3d.Node;
 import org.jogamp.java3d.QuadArray;
 import org.jogamp.java3d.Shape3D;
 import org.jogamp.java3d.PolygonAttributes;
+import org.jogamp.java3d.Texture;
 import org.jogamp.java3d.TextureAttributes;
 
 import org.jogamp.java3d.Transform3D;
@@ -43,15 +44,10 @@ public class MapBuilder {
     static Transform3D siguiente = new Transform3D();
 
     static Appearance appPista = null;
-    static Appearance appPistaSimple = null;
+    static Appearance appRoad = null;
 
     static Transform3D actualSimple = new Transform3D();
     static Transform3D siguienteSimple = new Transform3D();
-
-    static TexCoord2f t0 = new TexCoord2f(1.0f, 68.0f / 166.0f);
-    static TexCoord2f t1 = new TexCoord2f(1.0f, 0.99f);
-    static TexCoord2f t2 = new TexCoord2f(0.0f, 0.99f);
-    static TexCoord2f t3 = new TexCoord2f(0.0f, 68.0f / 166.0f);
 
     static TexCoord2f t4 = new TexCoord2f(0.001f, 0.0f);
     static TexCoord2f t5 = new TexCoord2f(132.0f / 678.0f, 0.0f);
@@ -89,9 +85,7 @@ public class MapBuilder {
 
     }
 
-    public static Shape3D getSegmento() {
-
-        Shape3D forma = null;
+    public static Node getSegmento() {
 
         Point3d[] ladoA = new Point3d[8];
         Point3d[] ladoB = new Point3d[8];
@@ -108,7 +102,9 @@ public class MapBuilder {
 
         }
 
-        int numCaras = 8;
+        // Wall / profile faces: everything except the road surface, textured
+        // from the pista.png atlas.
+        int numCaras = 7;
 
         QuadArray data = new QuadArray(numCaras * 4,
                 QuadArray.COORDINATES | QuadArray.TEXTURE_COORDINATE_2 | QuadArray.NORMALS);
@@ -118,7 +114,6 @@ public class MapBuilder {
                 ladoA[1], ladoB[1], ladoB[2], ladoA[2],
                 ladoA[2], ladoB[2], ladoB[3], ladoA[3],
                 ladoA[3], ladoB[3], ladoB[4], ladoA[4],
-                ladoA[4], ladoB[4], ladoB[5], ladoA[5],
                 ladoA[5], ladoB[5], ladoB[6], ladoA[6],
                 ladoA[6], ladoB[6], ladoB[7], ladoA[7],
                 ladoA[7], ladoB[7], ladoB[0], ladoA[0],
@@ -129,7 +124,6 @@ public class MapBuilder {
                 t4, t5, t6, t7,
                 t4, t5, t6, t7,
                 t4, t5, t6, t7,
-                t0, t1, t2, t3,
                 t4, t5, t6, t7,
                 t4, t5, t6, t7,
                 t4, t5, t6, t7
@@ -146,21 +140,58 @@ public class MapBuilder {
 
         ng.generateNormals(info);
 
-        // Appearance app = Tools.generarApariencia( Color.BLUE );
         if (appPista == null) {
-            // pista.png is the original 678x166 atlas the t0..t7 coordinates
-            // were tuned for: asphalt + single long center dash on top, large
-            // wall blocks bottom-left. output.png is a regenerated variant
-            // with smaller bricks and denser dashes - do not swap it back in.
+            // pista.png is the original 678x166 atlas the wall coordinates
+            // were tuned for: asphalt on top (now unused here - the road has
+            // its own texture), large wall blocks bottom-left. output.png is
+            // a regenerated variant - do not swap it back in.
             appPista = Tools.cargarTextura("c:\\3d\\pista.png");
+            // Wall faces sample inside [0,1]; clamp so mipmap filtering at
+            // slice edges doesn't wrap to the atlas's opposite row, and stop
+            // sampling before the deep mip levels merge the atlas regions.
+            appPista.getTexture().setBoundaryModeS(Texture.CLAMP_TO_EDGE);
+            appPista.getTexture().setBoundaryModeT(Texture.CLAMP_TO_EDGE);
+            appPista.getTexture().setMaximumLevel(4);
         }
 
-        forma = new Shape3D(info.getGeometryArray(), appPista);
+        Shape3D paredes = new Shape3D(info.getGeometryArray(), appPista);
 
-        forma.setCapability(Shape3D.ENABLE_PICK_REPORTING);
-        PickTool.setCapabilities(forma, PickTool.INTERSECT_FULL);
+        paredes.setCapability(Shape3D.ENABLE_PICK_REPORTING);
+        PickTool.setCapabilities(paredes, PickTool.INTERSECT_FULL);
+        paredes.setCollidable(false);
 
-        forma.setCollidable(false);
+        // Road surface: its own seamless asphalt texture (road.png, cropped
+        // from the pista.png atlas), so mipmap filtering never bleeds into
+        // the atlas's brick/gravel tiles at segment seams.
+        QuadArray dataRoad = new QuadArray(4,
+                QuadArray.COORDINATES | QuadArray.TEXTURE_COORDINATE_2 | QuadArray.NORMALS);
+
+        Point3d[] coordenadasRoad = { ladoA[4], ladoB[4], ladoB[5], ladoA[5] };
+        TexCoord2f[] coordenadasRoadT = { tB, tC, tD, tA };
+
+        dataRoad.setCoordinates(0, coordenadasRoad);
+        dataRoad.setTextureCoordinates(0, 0, coordenadasRoadT);
+
+        GeometryInfo infoRoad = new GeometryInfo(GeometryInfo.QUAD_ARRAY);
+        infoRoad.reset(dataRoad);
+        ng.generateNormals(infoRoad);
+
+        if (appRoad == null) {
+            appRoad = Tools.cargarTextura("c:\\3d\\road.png");
+            // Tiles along the track (T wraps onto more asphalt); clamp across
+            // the width so the white edge markers don't bleed into each other.
+            appRoad.getTexture().setBoundaryModeS(Texture.CLAMP_TO_EDGE);
+        }
+
+        Shape3D pista = new Shape3D(infoRoad.getGeometryArray(), appRoad);
+
+        pista.setCapability(Shape3D.ENABLE_PICK_REPORTING);
+        PickTool.setCapabilities(pista, PickTool.INTERSECT_FULL);
+        pista.setCollidable(false);
+
+        Group forma = new Group();
+        forma.addChild(paredes);
+        forma.addChild(pista);
 
         mLastNode = forma;
 
@@ -185,9 +216,7 @@ public class MapBuilder {
 
         // Use winding that faces +Y so the top is visible with default culling.
         Point3d[] coordenadas = { aLeft, aRight, bRight, bLeft };
-        // Map only the asphalt region of the atlas (same region the full
-        // profile uses for the road face), not the whole atlas.
-        TexCoord2f[] coordenadasT = { t3, t0, t1, t2 };
+        TexCoord2f[] coordenadasT = { tA, tB, tC, tD };
 
         data.setCoordinates(0, coordenadas);
         data.setTextureCoordinates(0, 0, coordenadasT);
@@ -198,11 +227,12 @@ public class MapBuilder {
         NormalGenerator ng = new NormalGenerator();
         ng.generateNormals(info);
 
-        if (appPistaSimple == null) {
-            appPistaSimple = Tools.cargarTextura("c:\\3d\\pista.png");
+        if (appRoad == null) {
+            appRoad = Tools.cargarTextura("c:\\3d\\road.png");
+            appRoad.getTexture().setBoundaryModeS(Texture.CLAMP_TO_EDGE);
         }
 
-        Shape3D forma = new Shape3D(info.getGeometryArray(), appPistaSimple);
+        Shape3D forma = new Shape3D(info.getGeometryArray(), appRoad);
         forma.setCapability(Shape3D.ENABLE_PICK_REPORTING);
         PickTool.setCapabilities(forma, PickTool.INTERSECT_FULL);
         forma.setCollidable(false);
@@ -975,6 +1005,11 @@ public class MapBuilder {
 
         Appearance app = Tools.cargarTextura(pTextura);
 
+        // Clamp so opposite texture edges don't bleed into each other at the
+        // face borders (the dark seam lines at the skybox horizon).
+        app.getTexture().setBoundaryModeS(Texture.CLAMP_TO_EDGE);
+        app.getTexture().setBoundaryModeT(Texture.CLAMP_TO_EDGE);
+
         PolygonAttributes pa = new PolygonAttributes();
         pa.setCullFace(PolygonAttributes.CULL_NONE);
         app.setPolygonAttributes(pa);
@@ -1078,6 +1113,13 @@ public class MapBuilder {
         ng.generateNormals(info);
 
         Appearance app = Tools.cargarTextura("c:\\3d\\ground5.png");
+
+        // Unlit surface: REPLACE shows the texture as-is instead of
+        // modulating by the GL current color, which black shapes drawn
+        // earlier in the frame (e.g. the car's blob shadow) can leak into.
+        TextureAttributes ta = new TextureAttributes();
+        ta.setTextureMode(TextureAttributes.REPLACE);
+        app.setTextureAttributes(ta);
 
         app.setMaterial(null);
 

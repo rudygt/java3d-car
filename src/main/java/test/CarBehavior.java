@@ -248,7 +248,7 @@ public class CarBehavior extends Behavior {
         this.mAnguloZ = 0.0;
 
 
-        mBehavior.setRotationCenter(new Point3d(0, 0, 0));
+        centrarRotacionEnElCarro();
         mCamara.rotarY(mAnguloTimon);
         mCamara.actualizar();
         
@@ -283,7 +283,7 @@ public class CarBehavior extends Behavior {
         this.mAnguloZ = 0.0;
 
 
-        mBehavior.setRotationCenter(new Point3d(0, 0, 0));
+        centrarRotacionEnElCarro();
         mCamara.rotarY(mAnguloTimon);
         mCamara.actualizar();
         
@@ -1390,12 +1390,6 @@ public class CarBehavior extends Behavior {
                 posicion.z += mDz;
                 t.set(posicion);
                 mPlanoBase.setTransform(t);
-
-                if (mMoverCamara) {
-                    mBehavior.setRotationCenter(new Point3d(posicion.x,
-                                                            posicion.y,
-                                                            posicion.z));
-                }
             }
 
             if (mDAX != 0) {
@@ -1456,6 +1450,8 @@ public class CarBehavior extends Behavior {
 
             }
 
+            centrarRotacionEnElCarro();
+
             if (mMoverCamara) {
 
                 if (mEstado == Estado.Down ||
@@ -1470,6 +1466,23 @@ public class CarBehavior extends Behavior {
             mHayCambioDeEstado = false;
 
         }
+    }
+
+    // The car model's origin is the rear axle at road level (front wheels sit
+    // at +1.85 in car space), so orbit around the visual center instead: half
+    // a wheelbase ahead along the heading, half a body height up.
+    private void centrarRotacionEnElCarro() {
+
+        Transform3D t = new Transform3D();
+        mPlanoBase.getTransform(t);
+        Vector3d posicion = new Vector3d();
+        t.get(posicion);
+
+        mBehavior.setRotationCenter(new Point3d(
+                posicion.x + Math.cos(mAnguloY) * 0.9,
+                posicion.y + 0.5,
+                posicion.z - Math.sin(mAnguloY) * 0.9));
+
     }
 
     public void actualizarUI() {

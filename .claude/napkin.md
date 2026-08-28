@@ -19,11 +19,13 @@
 ## Domain Behavior Guardrails
 1. **[2026-08-28] HiDPI (user runs 1920×1080 @125%): JOGL 2.6 handles it; uiScale=1 kept as default preference**
    `Main.main` sets `sun.java2d.uiScale=1` (guarded, overridable via -D) before AWT loads → original crisp 1:1-pixel look. On JOGL 2.6 the game also renders correctly WITH scaling; on old JOGL 2.3.2 it broke (viewport filled only bottom-left ~80%). Do instead: keep the guarded default; it must stay the first thing in main.
-2. **[2026-08-28] `pista.png` (678×166) is THE track texture ATLAS; `output.png` is a bad regenerated clone**
-   Top region = asphalt+centerline (texcoords t0..t3), bottom-left 132×66 = large wall blocks (t4..t7). output.png has same layout but small dense bricks/dashes → walls look wrong. Do instead: always load pista.png for track appearances; map sub-regions per face, never (0,0)-(1,1) across track quads.
+2. **[2026-08-28] Track textures: `road.png` = road surface, `pista.png` = walls only**
+   road.png (512×128) is the asphalt strip cropped out of the pista.png atlas so mipmaps never bleed into the brick/gravel tiles (was drawing black lines at segment seams; atlas+mipmap bleed). getSegmento() returns a Group of two Shape3D: walls (atlas, clamped, maximumLevel 4) + road (road.png, wraps along T). `output.png` is a bad regenerated atlas clone — never use it. Do instead: regenerate road.png from pista.png rows 1-96 if the atlas art changes; keep pick capabilities on BOTH shapes (terrain-following rays hit the road shape).
 3. **[2026-08-28] Two track builders with same fluent API**
    `TrackBuilder` (full profile: road + brick walls, `getSegmento`) vs `SimpleTrackBuilder` (flat top ribbon only, `*Simple` methods in MapBuilder). Do instead: use `TrackBuilder` for anything that should look like the classic game; track selection is `frmMain.TRACK_ID` ("pista-a" | "pista-b" | "simple-demo").
-4. **[2026-08-28] MapBuilder full-profile methods use mutable static state (`actual`/`siguiente`)**
+4. **[2026-08-28] Black-color state leak: unlit MODULATE textures turn black**
+   A shape drawn with black `ColoringAttributes` (e.g. the car's blob shadow) leaks GL current color into material-null shapes using TextureAttributes MODULATE — the ground plane rendered solid black (looked like a texture/mipmap bug; skybox bottomA.jpg is dark navy, masking the missing quad). Do instead: give every unlit textured surface TextureAttributes REPLACE (ground + skybox do this now); suspect state leaks before texture bugs when only material-null shapes break.
+5. **[2026-08-28] MapBuilder full-profile methods use mutable static state (`actual`/`siguiente`)**
    Do instead: don't build two tracks concurrently or interleave builder calls; build one track at a time.
 
 ## Shell & Command Reliability

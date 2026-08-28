@@ -20,6 +20,8 @@ import java.awt.event.ActionListener;
 import java.io.BufferedInputStream;
 import java.io.FileInputStream;
 
+import java.awt.GraphicsConfiguration;
+
 import org.jogamp.java3d.AmbientLight;
 import org.jogamp.java3d.Appearance;
 import org.jogamp.java3d.Background;
@@ -27,13 +29,21 @@ import org.jogamp.java3d.BackgroundSound;
 import org.jogamp.java3d.BoundingSphere;
 import org.jogamp.java3d.BranchGroup;
 import org.jogamp.java3d.Canvas3D;
+import org.jogamp.java3d.ColoringAttributes;
 import org.jogamp.java3d.DirectionalLight;
+import org.jogamp.java3d.GraphicsConfigTemplate3D;
+import org.jogamp.java3d.Group;
+import org.jogamp.java3d.LinearFog;
 import org.jogamp.java3d.MediaContainer;
 import org.jogamp.java3d.Node;
 import org.jogamp.java3d.PointSound;
+import org.jogamp.java3d.PolygonAttributes;
+import org.jogamp.java3d.Shape3D;
 import org.jogamp.java3d.Switch;
 import org.jogamp.java3d.Transform3D;
 import org.jogamp.java3d.TransformGroup;
+import org.jogamp.java3d.TransparencyAttributes;
+import org.jogamp.java3d.TriangleFanArray;
 
 import javax.swing.JButton;
 import javax.swing.JFrame;
@@ -52,7 +62,8 @@ import org.jogamp.vecmath.Vector3f;
 public class frmMain extends JFrame {
 
     // Track options: "pista-a", "pista-b", "simple-demo".
-    private static final String TRACK_ID = "simple-demo";
+    // pista-b is the original circuit with the multilevel caracol (360 helix).
+    private static final String TRACK_ID = "pista-b";
 
     private BranchGroup mEscena = null;
     private SimpleUniverse mUniverso = null;
@@ -120,7 +131,14 @@ public class frmMain extends JFrame {
 
     private void agregarPanel3D() {
 
-        Canvas3D panel = new Canvas3D(SimpleUniverse.getPreferredConfiguration());
+        // Request a multisample-capable framebuffer so scene antialiasing
+        // (enabled below) actually has samples to work with.
+        GraphicsConfigTemplate3D template = new GraphicsConfigTemplate3D();
+        template.setSceneAntialiasing(GraphicsConfigTemplate3D.PREFERRED);
+        GraphicsConfiguration config = GraphicsEnvironment.getLocalGraphicsEnvironment()
+                .getDefaultScreenDevice().getBestConfiguration(template);
+
+        Canvas3D panel = new Canvas3D(config);
 
         canvas = panel;
 
@@ -155,6 +173,8 @@ public class frmMain extends JFrame {
         universo.getViewingPlatform().setNominalViewingTransform();
 
         universo.getViewer().getView().setBackClipDistance(3000);
+
+        universo.getViewer().getView().setSceneAntialiasingEnable(anti);
 
         Background bg = new Background(new Color3f(0.17f, 0.65f, 0.92f)); // Sky Blue
         bg.setApplicationBounds(new BoundingSphere(new Point3d(0.0, 0.0, 0.0),
@@ -226,17 +246,33 @@ public class frmMain extends JFrame {
 
         Node piso = MapBuilder.getGroundPlane();
 
-        mEscena.addChild(Tools.trasladar(0, -9.2f, 0, piso));
+        Node pisoTrasladado = Tools.trasladar(0, -9.2f, 0, piso);
+
+        mEscena.addChild(pisoTrasladado);
+
+        // Distance haze over the desert floor only (scoped so the skybox and
+        // track stay crisp): hides the hard ground/skybox junction and the
+        // ground-texture tiling. Color approximates the desert horizon.
+        LinearFog fog = new LinearFog(new Color3f(0.78f, 0.70f, 0.58f), 120.0, 280.0);
+        fog.setInfluencingBounds(new BoundingSphere(new Point3d(0.0, 0.0, 0.0),
+                Double.POSITIVE_INFINITY));
+        fog.addScope((Group) pisoTrasladado);
+        mEscena.addChild(fog);
 
         Color3f lightColor = new Color3f(1.0f, 1.0f, 1.0f);
 
         BoundingSphere bounds = new BoundingSphere(new Point3d(0, 0, 0), 1000.0);
 
-        AmbientLight ambientLightNode = new AmbientLight(lightColor);
+        // Partial ambient so the directional light produces visible shading;
+        // full-white ambient flattened every surface.
+        AmbientLight ambientLightNode = new AmbientLight(new Color3f(0.5f, 0.5f, 0.5f));
         ambientLightNode.setInfluencingBounds(bounds);
         mEscena.addChild(ambientLightNode);
 
-        Vector3f light1Direction = new Vector3f(1.0f, 1.0f, -5f);
+        // Direction the light travels: downward so the road and car roof
+        // catch diffuse light (the original +1 Y pointed the light upward,
+        // leaving horizontal surfaces lit by ambient alone).
+        Vector3f light1Direction = new Vector3f(1.0f, -1.0f, -5f);
 
         DirectionalLight light1 = new DirectionalLight(lightColor, light1Direction);
         light1.setInfluencingBounds(bounds);
@@ -381,6 +417,12 @@ public class frmMain extends JFrame {
         planoBase.setCapability(TransformGroup.ALLOW_TRANSFORM_WRITE);
         planoBase.addChild(giroY);
 
+        // Blob shadow: translucent dark ellipse just above the road, centered
+        // on the car body (origin is the rear axle). Attached to giroY so it
+        // follows position and heading but not pitch/roll. Must never be
+        // pickable or the terrain-following ray would land on it.
+        giroY.addChild(crearSombraDelCarro());
+
         mEscena.addChild(planoBase);
 
         CarBehavior car = new CarBehavior();
@@ -492,6 +534,41 @@ public class frmMain extends JFrame {
         car.setEnable(true);
 
         car.reiniciar();
+
+    }
+
+    private Node crearSombraDelCarro() {
+
+        int segmentos = 24;
+
+        TriangleFanArray geo = new TriangleFanArray(segmentos + 2,
+                TriangleFanArray.COORDINATES,
+                new int[] { segmentos + 2 });
+
+        geo.setCoordinate(0, new Point3d(0.9, 0, 0));
+        for (int i = 0; i <= segmentos; i++) {
+            double ang = 2.0 * Math.PI * i / segmentos;
+            geo.setCoordinate(i + 1, new Point3d(0.9 + Math.cos(ang) * 2.0,
+                    0,
+                    Math.sin(ang) * 1.15));
+        }
+
+        Appearance app = new Appearance();
+        app.setColoringAttributes(new ColoringAttributes(0f, 0f, 0f,
+                ColoringAttributes.FASTEST));
+        app.setTransparencyAttributes(new TransparencyAttributes(
+                TransparencyAttributes.NICEST, 0.55f));
+        PolygonAttributes pa = new PolygonAttributes();
+        pa.setCullFace(PolygonAttributes.CULL_NONE);
+        app.setPolygonAttributes(pa);
+
+        Shape3D sombra = new Shape3D(geo, app);
+        sombra.setPickable(false);
+        sombra.setCollidable(false);
+
+        // Wheel contact patch is at -0.2413 (wheel radius); float the shadow
+        // a few cm above the asphalt to avoid z-fighting.
+        return Tools.trasladar(0, -0.19, 0, sombra);
 
     }
 
