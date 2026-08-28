@@ -1,31 +1,31 @@
 package test;
 
-import org.scijava.java3d.utils.picking.PickIntersection;
-import org.scijava.java3d.utils.picking.PickResult;
-import org.scijava.java3d.utils.picking.PickTool;
-import org.scijava.java3d.utils.universe.SimpleUniverse;
+import org.jogamp.java3d.utils.picking.PickIntersection;
+import org.jogamp.java3d.utils.picking.PickResult;
+import org.jogamp.java3d.utils.picking.PickTool;
+import org.jogamp.java3d.utils.universe.SimpleUniverse;
 
 import java.awt.AWTEvent;
 import java.awt.event.KeyEvent;
 
-import java.util.Enumeration;
+import java.util.Iterator;
 
-import org.scijava.java3d.Behavior;
-import org.scijava.java3d.BranchGroup;
-import org.scijava.java3d.PickInfo;
-import org.scijava.java3d.PickRay;
-import org.scijava.java3d.Transform3D;
-import org.scijava.java3d.TransformGroup;
-import org.scijava.java3d.WakeupCondition;
-import org.scijava.java3d.WakeupCriterion;
-import org.scijava.java3d.WakeupOnAWTEvent;
-import org.scijava.java3d.WakeupOnElapsedFrames;
-import org.scijava.java3d.WakeupOr;
+import org.jogamp.java3d.Behavior;
+import org.jogamp.java3d.BranchGroup;
+import org.jogamp.java3d.PickInfo;
+import org.jogamp.java3d.PickRay;
+import org.jogamp.java3d.Transform3D;
+import org.jogamp.java3d.TransformGroup;
+import org.jogamp.java3d.WakeupCondition;
+import org.jogamp.java3d.WakeupCriterion;
+import org.jogamp.java3d.WakeupOnAWTEvent;
+import org.jogamp.java3d.WakeupOnElapsedFrames;
+import org.jogamp.java3d.WakeupOr;
 
-import org.scijava.vecmath.Point3d;
-import org.scijava.vecmath.Vector2d;
-import org.scijava.vecmath.Vector3d;
-import org.scijava.vecmath.Vector3f;
+import org.jogamp.vecmath.Point3d;
+import org.jogamp.vecmath.Vector2d;
+import org.jogamp.vecmath.Vector3d;
+import org.jogamp.vecmath.Vector3f;
 
 public class TimonBehavior extends Behavior {
 
@@ -155,7 +155,7 @@ public class TimonBehavior extends Behavior {
 
     //Override Behavior's stimulus method to handle the event.
 
-    public void processStimulus(Enumeration criteria) {
+    public void processStimulus(Iterator<WakeupCriterion> criteria) {
 
         /* WakeupOnAWTEvent ev;
         WakeupCriterion genericEvt;

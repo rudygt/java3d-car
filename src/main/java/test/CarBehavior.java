@@ -1,8 +1,8 @@
 package test;
 
 
-import org.scijava.java3d.utils.behaviors.vp.OrbitBehavior;
-import org.scijava.java3d.utils.universe.SimpleUniverse;
+import org.jogamp.java3d.utils.behaviors.vp.OrbitBehavior;
+import org.jogamp.java3d.utils.universe.SimpleUniverse;
 
 import java.awt.event.KeyEvent;
 
@@ -10,23 +10,24 @@ import java.text.DecimalFormat;
 import java.text.SimpleDateFormat;
 
 import java.util.Date;
-import java.util.Enumeration;
+import java.util.Iterator;
 
-import org.scijava.java3d.Behavior;
-import org.scijava.java3d.BranchGroup;
-import org.scijava.java3d.Node;
-import org.scijava.java3d.PickInfo;
-import org.scijava.java3d.PickSegment;
-import org.scijava.java3d.Switch;
-import org.scijava.java3d.Transform3D;
-import org.scijava.java3d.TransformGroup;
-import org.scijava.java3d.WakeupCondition;
-import org.scijava.java3d.WakeupOnElapsedFrames;
+import org.jogamp.java3d.Behavior;
+import org.jogamp.java3d.BranchGroup;
+import org.jogamp.java3d.Node;
+import org.jogamp.java3d.PickInfo;
+import org.jogamp.java3d.PickSegment;
+import org.jogamp.java3d.Switch;
+import org.jogamp.java3d.Transform3D;
+import org.jogamp.java3d.TransformGroup;
+import org.jogamp.java3d.WakeupCondition;
+import org.jogamp.java3d.WakeupCriterion;
+import org.jogamp.java3d.WakeupOnElapsedFrames;
 
 import javax.swing.JLabel;
 
-import org.scijava.vecmath.Point3d;
-import org.scijava.vecmath.Vector3d;
+import org.jogamp.vecmath.Point3d;
+import org.jogamp.vecmath.Vector3d;
 
 
 public class CarBehavior extends Behavior {
@@ -247,7 +248,7 @@ public class CarBehavior extends Behavior {
         this.mAnguloZ = 0.0;
 
 
-        mBehavior.setRotationCenter(new Point3d(0, 0, 0));
+        centrarRotacionEnElCarro();
         mCamara.rotarY(mAnguloTimon);
         mCamara.actualizar();
         
@@ -282,7 +283,7 @@ public class CarBehavior extends Behavior {
         this.mAnguloZ = 0.0;
 
 
-        mBehavior.setRotationCenter(new Point3d(0, 0, 0));
+        centrarRotacionEnElCarro();
         mCamara.rotarY(mAnguloTimon);
         mCamara.actualizar();
         
@@ -302,7 +303,7 @@ public class CarBehavior extends Behavior {
         wakeupOn(wakeupCondition);
     }
 
-    public void processStimulus(Enumeration enumeration) {
+    public void processStimulus(Iterator<WakeupCriterion> enumeration) {
 
         mFrameCounter++;
 
@@ -1389,12 +1390,6 @@ public class CarBehavior extends Behavior {
                 posicion.z += mDz;
                 t.set(posicion);
                 mPlanoBase.setTransform(t);
-
-                if (mMoverCamara) {
-                    mBehavior.setRotationCenter(new Point3d(posicion.x,
-                                                            posicion.y,
-                                                            posicion.z));
-                }
             }
 
             if (mDAX != 0) {
@@ -1455,6 +1450,8 @@ public class CarBehavior extends Behavior {
 
             }
 
+            centrarRotacionEnElCarro();
+
             if (mMoverCamara) {
 
                 if (mEstado == Estado.Down ||
@@ -1469,6 +1466,23 @@ public class CarBehavior extends Behavior {
             mHayCambioDeEstado = false;
 
         }
+    }
+
+    // The car model's origin is the rear axle at road level (front wheels sit
+    // at +1.85 in car space), so orbit around the visual center instead: half
+    // a wheelbase ahead along the heading, half a body height up.
+    private void centrarRotacionEnElCarro() {
+
+        Transform3D t = new Transform3D();
+        mPlanoBase.getTransform(t);
+        Vector3d posicion = new Vector3d();
+        t.get(posicion);
+
+        mBehavior.setRotationCenter(new Point3d(
+                posicion.x + Math.cos(mAnguloY) * 0.9,
+                posicion.y + 0.5,
+                posicion.z - Math.sin(mAnguloY) * 0.9));
+
     }
 
     public void actualizarUI() {

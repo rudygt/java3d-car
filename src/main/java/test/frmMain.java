@@ -1,42 +1,49 @@
 package test;
 
-
-import org.scijava.java3d.utils.behaviors.vp.OrbitBehavior;
-import org.scijava.java3d.utils.geometry.Box;
-import org.scijava.java3d.utils.geometry.Sphere;
-import org.scijava.java3d.utils.geometry.Text2D;
-import org.scijava.java3d.utils.picking.PickIntersection;
-import org.scijava.java3d.utils.picking.PickResult;
-import org.scijava.java3d.utils.picking.PickTool;
-import org.scijava.java3d.utils.universe.SimpleUniverse;
+import org.jogamp.java3d.utils.behaviors.vp.OrbitBehavior;
+import org.jogamp.java3d.utils.geometry.Box;
+import org.jogamp.java3d.utils.geometry.Sphere;
+import org.jogamp.java3d.utils.geometry.Text2D;
+import org.jogamp.java3d.utils.picking.PickIntersection;
+import org.jogamp.java3d.utils.picking.PickResult;
+import org.jogamp.java3d.utils.picking.PickTool;
+import org.jogamp.java3d.utils.universe.SimpleUniverse;
 
 import java.awt.BorderLayout;
 import java.awt.Color;
-import java.awt.Dimension;
 import java.awt.Font;
 import java.awt.GraphicsDevice;
 import java.awt.GraphicsEnvironment;
-import java.awt.Toolkit;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 
 import java.io.BufferedInputStream;
 import java.io.FileInputStream;
 
-import org.scijava.java3d.AmbientLight;
-import org.scijava.java3d.Appearance;
-import org.scijava.java3d.Background;
-import org.scijava.java3d.BackgroundSound;
-import org.scijava.java3d.BoundingSphere;
-import org.scijava.java3d.BranchGroup;
-import org.scijava.java3d.Canvas3D;
-import org.scijava.java3d.DirectionalLight;
-import org.scijava.java3d.MediaContainer;
-import org.scijava.java3d.Node;
-import org.scijava.java3d.PointSound;
-import org.scijava.java3d.Switch;
-import org.scijava.java3d.Transform3D;
-import org.scijava.java3d.TransformGroup;
+import java.awt.GraphicsConfiguration;
+
+import org.jogamp.java3d.AmbientLight;
+import org.jogamp.java3d.Appearance;
+import org.jogamp.java3d.Background;
+import org.jogamp.java3d.BackgroundSound;
+import org.jogamp.java3d.BoundingSphere;
+import org.jogamp.java3d.BranchGroup;
+import org.jogamp.java3d.Canvas3D;
+import org.jogamp.java3d.ColoringAttributes;
+import org.jogamp.java3d.DirectionalLight;
+import org.jogamp.java3d.GraphicsConfigTemplate3D;
+import org.jogamp.java3d.Group;
+import org.jogamp.java3d.LinearFog;
+import org.jogamp.java3d.MediaContainer;
+import org.jogamp.java3d.Node;
+import org.jogamp.java3d.PointSound;
+import org.jogamp.java3d.PolygonAttributes;
+import org.jogamp.java3d.Shape3D;
+import org.jogamp.java3d.Switch;
+import org.jogamp.java3d.Transform3D;
+import org.jogamp.java3d.TransformGroup;
+import org.jogamp.java3d.TransparencyAttributes;
+import org.jogamp.java3d.TriangleFanArray;
 
 import javax.swing.JButton;
 import javax.swing.JFrame;
@@ -45,15 +52,18 @@ import javax.swing.JPanel;
 
 import javax.swing.SwingConstants;
 
-import org.scijava.vecmath.Color3f;
-import org.scijava.vecmath.Point2f;
-import org.scijava.vecmath.Point3d;
-import org.scijava.vecmath.Point3f;
-import org.scijava.vecmath.Vector3d;
-import org.scijava.vecmath.Vector3f;
-
+import org.jogamp.vecmath.Color3f;
+import org.jogamp.vecmath.Point2f;
+import org.jogamp.vecmath.Point3d;
+import org.jogamp.vecmath.Point3f;
+import org.jogamp.vecmath.Vector3d;
+import org.jogamp.vecmath.Vector3f;
 
 public class frmMain extends JFrame {
+
+    // Track options: "pista-a", "pista-b", "simple-demo".
+    // pista-b is the original circuit with the multilevel caracol (360 helix).
+    private static final String TRACK_ID = "pista-b";
 
     private BranchGroup mEscena = null;
     private SimpleUniverse mUniverso = null;
@@ -82,11 +92,11 @@ public class frmMain extends JFrame {
 
     private void jbInit() throws Exception {
 
-        setUndecorated(false);
-        Dimension screenSize = Toolkit.getDefaultToolkit().getScreenSize();
-        setBounds(0, 0, (int)screenSize.getWidth(), (int)screenSize.getHeight());
-        this.getContentPane().setLayout(new BorderLayout());        
-        this.setTitle("Java3D");
+        // Use MAXIMIZED_BOTH instead of manual bounds to handle title bars/taskbars
+        // correctly
+        this.setExtendedState(JFrame.MAXIMIZED_BOTH);
+        this.getContentPane().setLayout(new BorderLayout());
+        this.setTitle("Java3D Car Debug");
         this.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         this.setBackground(Color.black);
         jPanel1.setBackground(Color.black);
@@ -109,9 +119,9 @@ public class frmMain extends JFrame {
         mLaps.setFont(new Font("Tahoma", 1, 30));
         mLaps.setForeground(Color.yellow);
         mLaps.setHorizontalAlignment(SwingConstants.LEFT);
-        jPanel1.add(mTimer, BorderLayout.EAST);
-        jPanel1.add(mSpeed, BorderLayout.CENTER);
         jPanel1.add(mLaps, BorderLayout.WEST);
+        jPanel1.add(mSpeed, BorderLayout.CENTER);
+        jPanel1.add(mTimer, BorderLayout.EAST);
         this.getContentPane().add(jPanel1, BorderLayout.NORTH);
 
         // crear el panel 3d
@@ -121,8 +131,14 @@ public class frmMain extends JFrame {
 
     private void agregarPanel3D() {
 
-        Canvas3D panel =
-            new Canvas3D(SimpleUniverse.getPreferredConfiguration());
+        // Request a multisample-capable framebuffer so scene antialiasing
+        // (enabled below) actually has samples to work with.
+        GraphicsConfigTemplate3D template = new GraphicsConfigTemplate3D();
+        template.setSceneAntialiasing(GraphicsConfigTemplate3D.PREFERRED);
+        GraphicsConfiguration config = GraphicsEnvironment.getLocalGraphicsEnvironment()
+                .getDefaultScreenDevice().getBestConfiguration(template);
+
+        Canvas3D panel = new Canvas3D(config);
 
         canvas = panel;
 
@@ -134,19 +150,17 @@ public class frmMain extends JFrame {
 
         mUniverso = universo;
 
-
         BranchGroup escena = new BranchGroup();
 
         mEscena = escena;
 
         universo.getViewingPlatform().setNominalViewingTransform();
 
-
         OrbitBehavior orbit = new OrbitBehavior(panel);
 
         orbit.setSchedulingBounds(new BoundingSphere(new Point3d(0.0, 0.0,
-                                                                 0.0),
-                                                     Double.POSITIVE_INFINITY));
+                0.0),
+                Double.POSITIVE_INFINITY));
 
         universo.getViewingPlatform().setViewPlatformBehavior(orbit);
 
@@ -160,84 +174,107 @@ public class frmMain extends JFrame {
 
         universo.getViewer().getView().setBackClipDistance(3000);
 
-        Background bg = new Background();
+        universo.getViewer().getView().setSceneAntialiasingEnable(anti);
+
+        Background bg = new Background(new Color3f(0.17f, 0.65f, 0.92f)); // Sky Blue
         bg.setApplicationBounds(new BoundingSphere(new Point3d(0.0, 0.0, 0.0),
-                                                   55));
+                Double.POSITIVE_INFINITY));
+        mEscena.addChild(bg);
         BranchGroup backGeoBranch = new BranchGroup();
 
+        /*
+         * PhysicalBody myBody = new PhysicalBody();
+         * PhysicalEnvironment myEnvironment = new PhysicalEnvironment();
+         * JavaSoundMixer myMixer = new JavaSoundMixer(myEnvironment);
+         * myMixer.initialize();
+         * mUniverso.getViewer().getView().setPhysicalBody(myBody);
+         * mUniverso.getViewer().getView().setPhysicalEnvironment(myEnvironment);
+         * 
+         * mEscena.addChild(this.addObjectSound("c:\\3d\\audio\\loop.aif",
+         * 105));
+         */
+        /*
+         * Sphere sphereObj =
+         * new Sphere(1.0f, Sphere.GENERATE_NORMALS | Sphere.GENERATE_NORMALS_INWARD |
+         * Sphere.GENERATE_TEXTURE_COORDS |
+         * Sphere.GENERATE_TEXTURE_COORDS_Y_UP, 45 , appL );
+         * 
+         * Box bgBox = new Box( 0.5f, Box.GENERATE_NORMALS | Box.GENERATE_NORMALS_INWARD
+         * |
+         * Box.GENERATE_TEXTURE_COORDS |
+         * Box.GENERATE_TEXTURE_COORDS_Y_UP, 45 , appL );
+         */
 
-        /*PhysicalBody myBody = new PhysicalBody();
-        PhysicalEnvironment myEnvironment = new PhysicalEnvironment();
-        JavaSoundMixer myMixer = new JavaSoundMixer(myEnvironment);
-        myMixer.initialize();
-        mUniverso.getViewer().getView().setPhysicalBody(myBody);
-        mUniverso.getViewer().getView().setPhysicalEnvironment(myEnvironment);
+        // Appearance backgroundApp = sphereObj.getAppearance();
+        // backGeoBranch.addChild(sphereObj);
+        /*
+         * backGeoBranch.addChild(bgBox);
+         * bg.setGeometry(backGeoBranch);
+         */
 
-        mEscena.addChild(this.addObjectSound("c:\\3d\\audio\\loop.aif",
-                                             105));*/
-        /*Sphere sphereObj =
-            new Sphere(1.0f, Sphere.GENERATE_NORMALS | Sphere.GENERATE_NORMALS_INWARD |
-                       Sphere.GENERATE_TEXTURE_COORDS |
-                       Sphere.GENERATE_TEXTURE_COORDS_Y_UP, 45 , appL );
-
-        Box bgBox = new Box( 0.5f, Box.GENERATE_NORMALS | Box.GENERATE_NORMALS_INWARD |
-                       Box.GENERATE_TEXTURE_COORDS |
-                       Box.GENERATE_TEXTURE_COORDS_Y_UP, 45 , appL );*/
-
-        //      Appearance backgroundApp = sphereObj.getAppearance();
-        //backGeoBranch.addChild(sphereObj);
-        /*backGeoBranch.addChild(bgBox);
-        bg.setGeometry(backGeoBranch);*/
-
-
-        /*backGeoBranch.addChild(b);
-        bg.setGeometry(backGeoBranch);*/
+        /*
+         * backGeoBranch.addChild(b);
+         * bg.setGeometry(backGeoBranch);
+         */
         mEscena.addChild(MapBuilder.getSkyBox());
 
+        // backgroundApp.setTexture(appL.getTexture());
 
-        //        backgroundApp.setTexture(appL.getTexture());
-
-        //normalSetup(panel);
+        // normalSetup(panel);
 
         /* version 2 */
 
-
         /* fin version 2 */
 
-
-        //mEscena.addChild(MapBuilder.test());
-        //  mEscena.addChild( Tools.rotarZ( Math.PI / 12.0 , MapBuilder.getSegmentoRecto( 20 )  )  );
+        // mEscena.addChild(MapBuilder.test());
+        // mEscena.addChild( Tools.rotarZ( Math.PI / 12.0 , MapBuilder.getSegmentoRecto(
+        // 20 ) ) );
 
         dosetup(panel);
 
-        /*TransformGroup dball = new TransformGroup();
-        dball.setCapability( TransformGroup.ALLOW_TRANSFORM_WRITE );
-        dball.addChild( new Sphere(0.1f) );
-        dball.setPickable( false );
-        //car.setDebugBall( dball );
-
-        dball.setCollidable( true );
-
-        mEscena.addChild( dball );*/
+        /*
+         * TransformGroup dball = new TransformGroup();
+         * dball.setCapability( TransformGroup.ALLOW_TRANSFORM_WRITE );
+         * dball.addChild( new Sphere(0.1f) );
+         * dball.setPickable( false );
+         * //car.setDebugBall( dball );
+         * 
+         * dball.setCollidable( true );
+         * 
+         * mEscena.addChild( dball );
+         */
 
         Node piso = MapBuilder.getGroundPlane();
 
-        mEscena.addChild(Tools.trasladar(0, -9.2f, 0, piso));
+        Node pisoTrasladado = Tools.trasladar(0, -9.2f, 0, piso);
 
+        mEscena.addChild(pisoTrasladado);
+
+        // Distance haze over the desert floor only (scoped so the skybox and
+        // track stay crisp): hides the hard ground/skybox junction and the
+        // ground-texture tiling. Color approximates the desert horizon.
+        LinearFog fog = new LinearFog(new Color3f(0.78f, 0.70f, 0.58f), 120.0, 280.0);
+        fog.setInfluencingBounds(new BoundingSphere(new Point3d(0.0, 0.0, 0.0),
+                Double.POSITIVE_INFINITY));
+        fog.addScope((Group) pisoTrasladado);
+        mEscena.addChild(fog);
 
         Color3f lightColor = new Color3f(1.0f, 1.0f, 1.0f);
 
-        BoundingSphere bounds =
-            new BoundingSphere(new Point3d(0, 0, 0), 1000.0);
+        BoundingSphere bounds = new BoundingSphere(new Point3d(0, 0, 0), 1000.0);
 
-        AmbientLight ambientLightNode = new AmbientLight(lightColor);
+        // Partial ambient so the directional light produces visible shading;
+        // full-white ambient flattened every surface.
+        AmbientLight ambientLightNode = new AmbientLight(new Color3f(0.5f, 0.5f, 0.5f));
         ambientLightNode.setInfluencingBounds(bounds);
         mEscena.addChild(ambientLightNode);
 
-        Vector3f light1Direction = new Vector3f(1.0f, 1.0f, -5f);
+        // Direction the light travels: downward so the road and car roof
+        // catch diffuse light (the original +1 Y pointed the light upward,
+        // leaving horizontal surfaces lit by ambient alone).
+        Vector3f light1Direction = new Vector3f(1.0f, -1.0f, -5f);
 
-        DirectionalLight light1 =
-            new DirectionalLight(lightColor, light1Direction);
+        DirectionalLight light1 = new DirectionalLight(lightColor, light1Direction);
         light1.setInfluencingBounds(bounds);
 
         mEscena.addChild(light1);
@@ -246,66 +283,75 @@ public class frmMain extends JFrame {
 
         mUniverso.addBranchGraph(mEscena);
 
-        //testPick();
+        // testPick();
 
         /*
-        try {
+         * try {
+         * 
+         * Scene x = frmMain.loadScene("c:\\3d\\850nR.obj");
+         * 
+         * Scene y = frmMain.loadScene("c:\\3d\\rueda4.obj");
+         * 
+         * Color3f lightColor = new Color3f(1.0f, 1.0f, 1.0f);
+         * 
+         * BranchGroup bg = x.getSceneGroup();
+         * 
+         * BranchGroup rg = y.getSceneGroup();
+         * 
+         * Transform3D escalar = new Transform3D();
+         * 
+         * TransformGroup g = new TransformGroup();
+         * 
+         * g.setCapability( TransformGroup.ALLOW_TRANSFORM_WRITE );
+         * 
+         * mGrupo = g;
+         * //escalar.setScale(0.001);
+         * 
+         * g.setTransform( escalar );
+         * 
+         * g.addChild( rg );
+         * 
+         * 
+         * mEscena = new BranchGroup() ;
+         * 
+         * mEscena.addChild( bg );
+         * mEscena.addChild( g );
+         * 
+         * BoundingSphere bounds =
+         * new BoundingSphere(new Point3d(0, 0, 0), 100.0);
+         * 
+         * AmbientLight ambientLightNode = new AmbientLight(lightColor);
+         * ambientLightNode.setInfluencingBounds(bounds);
+         * mEscena.addChild(ambientLightNode);
+         * 
+         * Vector3f light1Direction = new Vector3f(1.0f, 1.0f, -5f);
+         * 
+         * DirectionalLight light1 =
+         * new DirectionalLight(lightColor, light1Direction);
+         * light1.setInfluencingBounds(bounds);
+         * 
+         * mEscena.addChild(light1);
+         * 
+         * 
+         * mUniverso.addBranchGraph(mEscena);
+         * 
+         * } catch (Exception ex) {
+         * ex.printStackTrace();
+         * } finally {
+         * }
+         * 
+         */
+        this.getContentPane().add(panel, BorderLayout.CENTER);
 
-            Scene x = frmMain.loadScene("c:\\3d\\850nR.obj");
-
-            Scene y = frmMain.loadScene("c:\\3d\\rueda4.obj");
-
-            Color3f lightColor = new Color3f(1.0f, 1.0f, 1.0f);
-
-            BranchGroup bg = x.getSceneGroup();
-
-            BranchGroup rg = y.getSceneGroup();
-
-            Transform3D escalar = new Transform3D();
-
-            TransformGroup g = new TransformGroup();
-
-            g.setCapability( TransformGroup.ALLOW_TRANSFORM_WRITE );
-
-            mGrupo = g;
-            //escalar.setScale(0.001);
-
-            g.setTransform( escalar );
-
-            g.addChild( rg );
-
-
-            mEscena = new BranchGroup() ;
-
-            mEscena.addChild( bg );
-            mEscena.addChild( g );
-
-            BoundingSphere bounds =
-                new BoundingSphere(new Point3d(0, 0, 0), 100.0);
-
-            AmbientLight ambientLightNode = new AmbientLight(lightColor);
-            ambientLightNode.setInfluencingBounds(bounds);
-            mEscena.addChild(ambientLightNode);
-
-            Vector3f light1Direction = new Vector3f(1.0f, 1.0f, -5f);
-
-            DirectionalLight light1 =
-                new DirectionalLight(lightColor, light1Direction);
-            light1.setInfluencingBounds(bounds);
-
-            mEscena.addChild(light1);
-
-
-            mUniverso.addBranchGraph(mEscena);
-
-        } catch (Exception ex) {
-            ex.printStackTrace();
-        } finally {
-        }
-
-*/
-        this.add(panel, BorderLayout.CENTER);
-
+        // Debug prints to see the actual size of the components
+        this.addComponentListener(new java.awt.event.ComponentAdapter() {
+            public void componentResized(java.awt.event.ComponentEvent e) {
+                System.out.println("Frame Size: " + getSize());
+                System.out.println("Canvas Size: " + panel.getSize());
+                System.out.println("HUD Size: " + jPanel1.getSize());
+                System.out.println("Canvas Visible: " + panel.isVisible());
+            }
+        });
     }
 
     private void dosetup(Canvas3D panel) {
@@ -345,16 +391,16 @@ public class frmMain extends JFrame {
 
         giroX.addChild(Tools.trasladar(0, 0, 0.50f, giroRuedaTraseraDerecha));
         giroX.addChild(Tools.trasladar(0, 0, -0.50f,
-                                       giroRuedaTraseraIzquierda));
+                giroRuedaTraseraIzquierda));
 
         giroX.addChild(Tools.trasladar(1.85f, 0, 0.50f,
-                                       timonRuedaDelanteraDerecha));
+                timonRuedaDelanteraDerecha));
         giroX.addChild(Tools.trasladar(1.85f, 0, -0.50f,
-                                       timonRuedaDelanteraIzquierda));
+                timonRuedaDelanteraIzquierda));
 
         giroX.addChild(Tools.trasladar(-0.6f, 0.50f, 0.18f,
-                                       Tools.rotarY(Math.PI / 2,
-                                                    CarBuilder.getRueda())));
+                Tools.rotarY(Math.PI / 2,
+                        CarBuilder.getRueda())));
 
         Node carBody = CarBuilder.getBody();
         giroX.addChild(carBody);
@@ -371,12 +417,17 @@ public class frmMain extends JFrame {
         planoBase.setCapability(TransformGroup.ALLOW_TRANSFORM_WRITE);
         planoBase.addChild(giroY);
 
+        // Blob shadow: translucent dark ellipse just above the road, centered
+        // on the car body (origin is the rear axle). Attached to giroY so it
+        // follows position and heading but not pitch/roll. Must never be
+        // pickable or the terrain-following ray would land on it.
+        giroY.addChild(crearSombraDelCarro());
+
         mEscena.addChild(planoBase);
 
         CarBehavior car = new CarBehavior();
 
-        //Node pista = MapBuilder.getPistaB(); //MapBuilder.getPistaA();
-        Node pista = MapBuilder.getPistaB();
+        Node pista = buildTrack();
 
         BranchGroup bg2 = new BranchGroup();
 
@@ -391,8 +442,8 @@ public class frmMain extends JFrame {
         car.setTimerLabel(mTimer);
 
         car.setSpeedLabel(mSpeed);
-        
-        car.setLaps( mLaps );
+
+        car.setLaps(mLaps);
 
         CB = car;
 
@@ -417,7 +468,7 @@ public class frmMain extends JFrame {
         car.setTimonRuedaDelanteraIzquierda(timonRuedaDelanteraIzquierda);
 
         car.setSchedulingBounds(new BoundingSphere(new Point3d(0.0, 0.0, 0.0),
-                                                   Double.POSITIVE_INFINITY));
+                Double.POSITIVE_INFINITY));
 
         car.setUniverso(mUniverso);
         car.setCuerpoDelCarro(carBody);
@@ -426,9 +477,8 @@ public class frmMain extends JFrame {
         Appearance fl = Tools.cargarTextura("c:\\3d\\fline.png");
         Appearance negro = Tools.generarApariencia(Color.BLACK);
 
-        Box b =
-            new Box(0.20f, 0.1f, 2.5f, Box.GENERATE_NORMALS | Box.GENERATE_TEXTURE_COORDS,
-                    negro);
+        Box b = new Box(0.20f, 0.1f, 2.5f, Box.GENERATE_NORMALS | Box.GENERATE_TEXTURE_COORDS,
+                negro);
 
         b.getShape(Box.TOP).setAppearance(fl);
         b.setCollidable(true);
@@ -437,7 +487,7 @@ public class frmMain extends JFrame {
 
         CollisionDetector de = new CollisionDetector(b);
         de.setSchedulingBounds(new BoundingSphere(new Point3d(0.0, 0.0, 0.0),
-                                                  Double.POSITIVE_INFINITY));
+                Double.POSITIVE_INFINITY));
         de.setEnable(true);
         de.setCarB(car);
 
@@ -455,15 +505,14 @@ public class frmMain extends JFrame {
 
         /* texto inicio */
         Color3f amarillo = new Color3f();
-        amarillo.set(Color.YELLOW);
+        Tools.setColor(amarillo, Color.YELLOW);
         Color3f rojo = new Color3f();
-        rojo.set(Color.RED);
+        Tools.setColor(rojo, Color.RED);
         Color3f naranja = new Color3f();
-        naranja.set(Color.ORANGE);
+        Tools.setColor(naranja, Color.ORANGE);
         Color3f verde = new Color3f();
-        verde.set(Color.GREEN);
-        Text2D msgCero =
-            new Text2D("INICIO!", verde, "Tahoma", 150, Font.BOLD);
+        Tools.setColor(verde, Color.GREEN);
+        Text2D msgCero = new Text2D("INICIO!", verde, "Tahoma", 150, Font.BOLD);
         Text2D msgUno = new Text2D("1", naranja, "Tahoma", 150, Font.BOLD);
         Text2D msgDos = new Text2D("2", amarillo, "Tahoma", 150, Font.BOLD);
         Text2D msgTres = new Text2D("3", rojo, "Tahoma", 150, Font.BOLD);
@@ -481,11 +530,56 @@ public class frmMain extends JFrame {
         car.setTextos(sw);
 
         mEscena.addChild(Tools.trasladar(4, 1.0, 0,
-                                         Tools.rotarY(-Math.PI / 2, sw)));
+                Tools.rotarY(-Math.PI / 2, sw)));
         car.setEnable(true);
-        
+
         car.reiniciar();
-        
+
+    }
+
+    private Node crearSombraDelCarro() {
+
+        int segmentos = 24;
+
+        TriangleFanArray geo = new TriangleFanArray(segmentos + 2,
+                TriangleFanArray.COORDINATES,
+                new int[] { segmentos + 2 });
+
+        geo.setCoordinate(0, new Point3d(0.9, 0, 0));
+        for (int i = 0; i <= segmentos; i++) {
+            double ang = 2.0 * Math.PI * i / segmentos;
+            geo.setCoordinate(i + 1, new Point3d(0.9 + Math.cos(ang) * 2.0,
+                    0,
+                    Math.sin(ang) * 1.15));
+        }
+
+        Appearance app = new Appearance();
+        app.setColoringAttributes(new ColoringAttributes(0f, 0f, 0f,
+                ColoringAttributes.FASTEST));
+        app.setTransparencyAttributes(new TransparencyAttributes(
+                TransparencyAttributes.NICEST, 0.55f));
+        PolygonAttributes pa = new PolygonAttributes();
+        pa.setCullFace(PolygonAttributes.CULL_NONE);
+        app.setPolygonAttributes(pa);
+
+        Shape3D sombra = new Shape3D(geo, app);
+        sombra.setPickable(false);
+        sombra.setCollidable(false);
+
+        // Wheel contact patch is at -0.2413 (wheel radius); float the shadow
+        // a few cm above the asphalt to avoid z-fighting.
+        return Tools.trasladar(0, -0.19, 0, sombra);
+
+    }
+
+    private Node buildTrack() {
+        if ("pista-b".equals(TRACK_ID)) {
+            return MapBuilder.getPistaB();
+        }
+        if ("simple-demo".equals(TRACK_ID)) {
+            return TrackCatalog.getSimpleDemoTrack();
+        }
+        return MapBuilder.getPistaA();
     }
 
     private void jButton1_actionPerformed(ActionEvent e) {
@@ -497,6 +591,5 @@ public class frmMain extends JFrame {
         // boton 2
         CB.setMoverCamara(!CB.isMoverCamara());
     }
-
 
 }
