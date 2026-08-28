@@ -81,3 +81,64 @@ Manually moves the cursor without adding geometry.
 - **Method:** `translate(double x, double y, double z)`
 - **Parameters:**
   - `x, y, z`: Translation vector.
+
+## Low-Level Geometry: How Segments Are Built
+
+This section documents how `TrackBuilder` ultimately creates geometry via
+`MapBuilder` and Java3D primitives.
+
+### Core Primitive: `MapBuilder.getSegmento()`
+- **File:** `src/main/java/test/MapBuilder.java`
+- **Purpose:** Build one track "slice" (a short, extruded road section).
+- **Primitive:** `QuadArray` with 8 quads (32 vertices) representing the road
+  surface and side faces.
+- **Shape profile:** `puntosBase` defines 8 points that describe a road cross
+  section (width, height, and a thin edge lip). These points are transformed
+  twice:
+  - `actual` is the transform for the slice start.
+  - `siguiente` is the transform for the slice end.
+- **Geometry assembly:** The method builds 8 quads by connecting each edge of
+  the start profile (`ladoA`) to the matching edge of the end profile (`ladoB`).
+- **Normals/UVs:** `NormalGenerator` computes normals; texture coordinates are
+  assigned per face using `TexCoord2f` constants.
+- **Appearance:** `Tools.cargarTextura("c:\\3d\\output.png")` is loaded once and
+  reused (static `appPista`).
+
+### Straight Segments: `getSegmentoRecto(double)`
+- Builds a `Group` of consecutive slices.
+- `actual` starts at identity.
+- For each unit step `i`, `siguiente` translates by `(i, 0, 0)`, and
+  `getSegmento()` bridges `actual` -> `siguiente`.
+- A fractional remainder (if any) adds one more slice at `pLongitud`.
+
+### Slopes: `getPendiente(double height, int length)`
+- Same slice loop as straight, but `siguiente` translates by `(i, i*pasoAltura, 0)`.
+- `pasoAltura = height / length` creates a linear ramp in Y.
+
+### Curves: `getCurvaDerecha/Izquierda(double angle)`
+- Splits the turn into `numSegmentos = (angle / (PI/2)) * 15` slices.
+- Each slice computes an arc point:
+  - Right: `x = sin(angle)*radius`, `z = -cos(angle)*radius`, with `radius = 10`.
+  - Left: same math, but mirrored by starting center `(0, -radius)` and
+    opposite rotation.
+- `siguiente` applies translation to the arc point and a Y-rotation to align
+  the slice tangent to the curve.
+
+### Curves With Height: `getCurvaDerecha/Izquierda(double, int height)`
+- Adds vertical progression `pasoAltura = height / numSegmentos` on each slice.
+- Uses the same arc math and tangent rotation as flat curves.
+
+### Helix: `getCaracol(int height)`
+- Builds a spiral by stepping through `numSegmentos = 60 * abs(height)` slices.
+- Uses a larger turn radius (`radioGiro = 15`) and full rotations
+  (`maxAngle = abs(height) * 2*PI`).
+- Each slice advances:
+  - X/Z along the circle.
+  - Y by `dy = (height * 5) / numSegmentos`.
+
+### How `TrackBuilder` Chains Segments
+- `TrackBuilder.add(...)` places each segment `Node` under a `TransformGroup`
+  with the current cursor transform, then advances the cursor by a computed
+  `delta` transform.
+- This decouples segment geometry (built in `MapBuilder`) from placement and
+  chaining in the final track.

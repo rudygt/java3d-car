@@ -12,6 +12,8 @@
 
 # Package Files #
 *.jar
+# except the vendored Java3D 1.7.1 jars (project-local Maven repo; not on Central)
+!lib/**/*.jar
 *.war
 *.nar
 *.ear
@@ -21,3 +23,16 @@
 
 # virtual machine crash logs, see http://www.java.com/en/download/help/error_hotspot.xml
 hs_err_pid*
+
+# Build output
+target/
+
+# IDE
+.idea/
+.vscode/
+
+# local scratch/debug artifacts
+build_output*.txt
+dependency_tree.txt
+latest_screenshot.png
+Screenshot *.png
