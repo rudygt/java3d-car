@@ -7,6 +7,8 @@
 - Each item includes date + "Do instead".
 
 ## Execution & Validation (Highest Priority)
+0. **[2026-08-28] Next task: JavaFX 3D port spike on `explore/javafx-port`**
+   Plan, mapping table, gotchas (Y-down axis, texcoord V flip, own raycast for terrain) and milestones live in `javafxPort.md` (repo root, committed on master). Do instead: read javafxPort.md before starting; new code goes in package `test.fx` so the Java3D game keeps working side by side.
 1. **[2026-08-28] Repo lives on Windows FS; app must run on Windows**
    Do instead: build/run via WSL interop: `cmd.exe /c "mvnw.cmd -q package assembly:single -DskipTests"`, run the fat jar with JDK 11 at `C:\Program Files\Amazon Corretto\jdk11.0.7_10\bin\java.exe`.
 2. **[2026-08-28] Stack is JogAmp Java3D 1.7.1 + JOGL 2.6.0; runs on JDK 11–21**
